@@ -1,0 +1,63 @@
+use std::str::FromStr;
+use crate::ast::{Expr, Term, Opcode, Statement, Func};
+
+grammar;
+
+Comma<T>: Vec<T> = { 
+    <v:(<T> ",")*> <e:T?> => match e {
+        None => v,
+        Some(e) => {
+            let mut v = v;
+            v.push(e);
+            v
+        }
+    }
+};
+
+SemiComma<T>: Vec<T> = { 
+    <v:(<T> ";")*> <e:T?> => match e {
+        None => v,
+        Some(e) => {
+            let mut v = v;
+            v.push(e);
+            v
+        }
+    }
+};
+
+pub Pars = Comma<Id>;
+pub Program = SemiComma<Funcdef>;
+pub Funcdef : Func = {
+	<id:Id> "(" <pars:Pars> ")" <statements:Statements> "end" => Func { id, pars, statements }
+};
+
+pub Statements = SemiComma<Statement>;
+
+pub Statement: Box<Statement> = {
+	"return" <e:Expr> => Box::new(Statement::Ret(e)),
+	"var" <id:Id> "=" <e:Expr> => Box::new(Statement::Assign(id, e)),
+	<id:Id> "=" <e:Expr> => Box::new(Statement::ReAssign(id, e))
+};
+
+pub Expr: Box<Expr> = {
+	<op:ExprOp> <n:Term> => Box::new(Expr::Op(op, n)),
+	<n:Term> => Box::new(Expr::Single(n))
+};
+
+ExprOp: Opcode = {
+	"+" => Opcode::Add,
+	"-" => Opcode::Sub,
+	"not" => Opcode::Not,
+	"head" => Opcode::Head,
+	"tail" => Opcode::Tail,
+	"islist" => Opcode::IsList,
+};
+
+pub Term: Box<Term> = {
+	Num => Box::new(Term::Num(<>)),
+	Id => Box::new(Term::Id(<>)),
+	"(" <n:Term> ")" => n,
+};
+
+pub Id: String = <s:r"[a-zA-Z][a-zA-Z0-9]*"> => s.to_string();
+Num: i32 = <s:r"[0-9]+"> => i32::from_str(s).unwrap();
