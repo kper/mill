@@ -67,6 +67,14 @@ mod tests {
         assert!(grammar::ExprParser::new().parse("head (a)").is_ok());
         assert!(grammar::ExprParser::new().parse("tail (a)").is_ok());
         assert!(grammar::ExprParser::new().parse("islist (a)").is_ok());
+        assert!(grammar::ExprParser::new().parse("a == a").is_ok());
+        assert!(grammar::ExprParser::new().parse("a >= a").is_ok());
+        assert!(grammar::ExprParser::new().parse("a == a == a").is_err());
+        assert!(grammar::ExprParser::new().parse("a >= a >= a").is_err());
+        assert!(grammar::ExprParser::new().parse("a + a").is_ok());
+        assert!(grammar::ExprParser::new().parse("a + a + a").is_ok());
+        assert!(grammar::ExprParser::new().parse("a + a - a").is_ok());
+        assert!(grammar::ExprParser::new().parse("a + a - a or a").is_ok());
         assert!(grammar::ExprParser::new().parse("(a)").is_ok());
         assert!(grammar::ExprParser::new().parse("(1)").is_ok());
     }
@@ -100,6 +108,14 @@ mod tests {
     #[test]
     fn parse_prog() {
         assert!(grammar::ProgramParser::new().parse("x(a,b,c) return k; end; x(a,b,c) return k; end;").is_ok());
+    }
+
+    #[test]
+    fn parse_call() {
+        assert!(grammar::TermParser::new().parse("myfunction ()").is_ok());
+        assert!(grammar::TermParser::new().parse("myfunction()").is_ok());
+        assert!(grammar::TermParser::new().parse("myfunction(a)").is_ok());
+        assert!(grammar::TermParser::new().parse("myfunction(a,b,c)").is_ok());
     }
 
     #[test]

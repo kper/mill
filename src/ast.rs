@@ -43,7 +43,12 @@ pub enum Statement {
 pub enum Expr {
     Num(i32),
     Id(String),
-    Op(Opcode, Box<Term>),
+    // like addition, multiplication
+    Chained(Opcode, Box<Term>, Box<Expr>),
+    // not, head, tail, islist
+    Unchained(Opcode, Box<Term>),
+    // >=, ==
+    Dual(Opcode, Box<Term>, Box<Term>),
     Single(Box<Term>),
 } 
 
@@ -57,11 +62,16 @@ pub enum Opcode {
     Head,
     Tail,
     IsList,
+    Or,
+    Dot,
+    Geq,
+    Cmp,
 }
 
 #[derive(Debug)]
 pub enum Term {
     Num(i32),
     Id(IdTy),
+    Call(IdTy, Vec<Box<Expr>>),
 }
 

@@ -42,23 +42,34 @@ pub Statement: Box<Statement> = {
 };
 
 pub Expr: Box<Expr> = {
-	<op:ExprOp> <n:Term> => Box::new(Expr::Op(op, n)),
-	<n:Term> => Box::new(Expr::Single(n))
+	"not" <n:Term> => Box::new(Expr::Unchained(Opcode::Not, n)),
+	"head" <n:Term> => Box::new(Expr::Unchained(Opcode::Head, n)),
+	"tail" <n:Term> => Box::new(Expr::Unchained(Opcode::Tail, n)),
+    "islist" <n:Term> => Box::new(Expr::Unchained(Opcode::IsList, n)),
+    <n1:Term> ">=" <n2:Term> => Box::new(Expr::Dual(Opcode::Geq, n1, n2)),
+    <n1:Term> "==" <n2:Term> => Box::new(Expr::Dual(Opcode::Cmp, n1, n2)),
+    <expr:ChainedExpr> => expr,
 };
+
+ChainedExpr: Box<Expr> = {
+    <n1:Term> <op:ExprOp> <n2:ChainedExpr> => Box::new(Expr::Chained(op, n1, n2)),
+    <n:Term> => Box::new(Expr::Single(n)),
+};
+
+Exprs: Vec<Box<Expr>> = Comma<Expr>;
 
 ExprOp: Opcode = {
 	"+" => Opcode::Add,
 	"-" => Opcode::Sub,
-	"not" => Opcode::Not,
-	"head" => Opcode::Head,
-	"tail" => Opcode::Tail,
-	"islist" => Opcode::IsList,
+	"or" => Opcode::Or,
+	"." => Opcode::Dot,
 };
 
 pub Term: Box<Term> = {
 	Num => Box::new(Term::Num(<>)),
 	Id => Box::new(Term::Id(<>)),
 	"(" <n:Term> ")" => n,
+	<id:Id> "(" <exprs:Exprs> ")" => Box::new(Term::Call(id, exprs)),
 };
 
 pub Id: String = <s:r"[a-zA-Z][a-zA-Z0-9]*"> => s.to_string();
