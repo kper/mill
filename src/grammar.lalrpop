@@ -1,7 +1,12 @@
 use std::str::FromStr;
-use crate::ast::{Program, Expr, Term, Opcode, Statement, Func, Continuation, Guard};
+use crate::ast::{Program, Expr, Term, Opcode, Statement, Func, Continuation, Guard, Error};
+use lalrpop_util::ParseError;
 
 grammar;
+
+extern {
+    type Error = Error;
+}
 
 Comma<T>: Vec<T> = { 
     <v:(<T> ",")*> <e:T?> => match e {
@@ -23,7 +28,9 @@ pub Program : Program = <funcs:SemiComma<Funcdef>> => Program {
     functions: funcs
 };
 pub Funcdef : Func = {
-	<id:Id> "(" <pars:Pars> ")" <statements:Statements> "end" => Func { id, pars, statements }
+	<id:Id> "(" <pars:Pars> ")" <statements:Statements> "end" =>? Func::new(id, pars, statements).map_err(|w| ParseError::User {
+        error: w
+    })
 };
 
 pub Statements = SemiComma<Statement>;

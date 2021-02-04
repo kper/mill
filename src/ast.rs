@@ -1,6 +1,14 @@
 use std::collections::HashSet;
+use crate::symbol_table::SymbolTable;
 
-type IdTy = String;
+pub type IdTy = String;
+type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum Error {
+    SymbolAlreadyDefined(IdTy),
+    SymbolNotDefined(IdTy)
+}
 
 #[derive(Debug)]
 pub struct Program {
@@ -30,7 +38,37 @@ pub struct Func {
     pub id: IdTy,
     pub pars: Vec<IdTy>,
     pub statements: Vec<Box<Statement>>,
+    symbol_table: SymbolTable,
 }
+
+impl Func {
+    pub fn new(id: IdTy, pars: Vec<IdTy>, statements: Vec<Box<Statement>>) -> Result<Self> {
+        let mut symbol_table = SymbolTable::default();
+
+        for stmt in statements.iter() {
+            match &**stmt {
+                Statement::Assign(id, _) => {
+                    symbol_table.insert(id.to_string())?
+                },
+                Statement::ReAssign(id, _) => {
+                    if !symbol_table.lookup_symbol(&id) {
+                        return Err(Error::SymbolNotDefined(id.to_string()));
+                    }
+                },
+                _ => {}
+            }
+        }
+
+        Ok(Self {
+            id,
+            pars,
+            statements,
+            symbol_table 
+        })
+    }
+}
+
+
 
 #[derive(Debug)]
 pub enum Statement {
