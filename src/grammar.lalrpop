@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::ast::{Expr, Term, Opcode, Statement, Func};
+use crate::ast::{Program, Expr, Term, Opcode, Statement, Func};
 
 grammar;
 
@@ -26,7 +26,9 @@ SemiComma<T>: Vec<T> = {
 };
 
 pub Pars = Comma<Id>;
-pub Program = SemiComma<Funcdef>;
+pub Program : Program = <funcs:SemiComma<Funcdef>> => Program {
+    functions: funcs
+};
 pub Funcdef : Func = {
 	<id:Id> "(" <pars:Pars> ")" <statements:Statements> "end" => Func { id, pars, statements }
 };

@@ -1,17 +1,45 @@
+use std::collections::HashSet;
+
 type IdTy = String;
 
+#[derive(Debug)]
+pub struct Program {
+    pub functions: Vec<Func>,
+}
+
+impl Program {
+    /// Check if any functions has a duplicated name
+    /// Returns `true` if the name already exists. Otherwise return `false`.
+    pub fn check_duplicated_names(&self) -> bool {
+        let mut set = HashSet::new();
+
+        for name in self.functions.iter().map(|w| &w.id) {
+            if set.contains(&name) {
+                return true;
+            }
+
+            set.insert(name);
+        }
+
+        return false;
+    }
+}
+
+#[derive(Debug)]
 pub struct Func {
     pub id: IdTy,
     pub pars: Vec<IdTy>,
     pub statements: Vec<Box<Statement>>,
 }
 
+#[derive(Debug)]
 pub enum Statement {
     Ret(Box<Expr>),
     Assign(IdTy, Box<Expr>),
     ReAssign(IdTy, Box<Expr>),
 }
 
+#[derive(Debug)]
 pub enum Expr {
     Num(i32),
     Id(String),
@@ -19,6 +47,7 @@ pub enum Expr {
     Single(Box<Term>),
 } 
 
+#[derive(Debug)]
 pub enum Opcode {
     Mul,
     Div,
@@ -30,6 +59,7 @@ pub enum Opcode {
     IsList,
 }
 
+#[derive(Debug)]
 pub enum Term {
     Num(i32),
     Id(IdTy),
