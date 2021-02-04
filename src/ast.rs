@@ -37,7 +37,24 @@ pub enum Statement {
     Ret(Box<Expr>),
     Assign(IdTy, Box<Expr>),
     ReAssign(IdTy, Box<Expr>),
+    Conditional(Option<IdTy>, Vec<Box<Guard>>),
 }
+
+#[derive(Debug)]
+pub struct Guard {
+    pub guard: Option<Box<Expr>>,
+    pub statements: Vec<Box<Statement>>,
+    pub continuation: Continuation, 
+}
+
+#[derive(Debug)]
+pub enum Continuation {
+    Continue(Option<IdTy>),
+    Break(Option<IdTy>),
+}
+
+
+
 
 #[derive(Debug)]
 pub enum Expr {

@@ -81,7 +81,8 @@ mod tests {
 
     #[test]
     fn parse_statement() {
-        
+        // Semicolon is only applied on statements, not singular
+        assert!(grammar::StatementParser::new().parse("return head x").is_ok());
         assert!(grammar::StatementParser::new().parse("return not 1").is_ok());
         assert!(grammar::StatementParser::new().parse("return not x").is_ok());
         assert!(grammar::StatementParser::new().parse("return head x").is_ok());
@@ -91,18 +92,32 @@ mod tests {
         assert!(grammar::StatementParser::new().parse("var x = islist x").is_ok());
         assert!(grammar::StatementParser::new().parse("x = x").is_ok());
         assert!(grammar::StatementParser::new().parse("x = islist x").is_ok());
+        assert!(grammar::StatementParser::new().parse("id: cond -> return not a; break; -> return not a; break; end").is_ok());
     }
 
     #[test]
     fn parse_statements() {
         assert!(grammar::StatementsParser::new().parse("return not 1; return not 1;").is_ok());
         assert!(grammar::StatementsParser::new().parse("return not 1 return not 1;").is_err());
+        assert!(grammar::StatementsParser::new().parse("id: cond -> return not a; break; -> return not a; break; end; cond -> return not a; continue a; end;").is_ok());
     }
 
     #[test]
     fn parse_func() {
         assert!(grammar::FuncdefParser::new().parse("x(a,b,c) return k; end").is_ok());
-        assert!(grammar::FuncdefParser::new().parse("x(a,b,c) return k end").is_ok());
+    }
+
+    #[test]
+    fn parse_guard() {
+        assert!(grammar::GuardParser::new().parse("-> return not a; break").is_ok());
+        assert!(grammar::GuardParser::new().parse("-> return not a; break a").is_ok());
+        assert!(grammar::GuardParser::new().parse("not b -> return not a; break").is_ok());
+        assert!(grammar::GuardParser::new().parse("not b -> return not a; break a").is_ok());
+    }
+
+    #[test]
+    fn parse_cond() {
+        assert!(grammar::ConditionalParser::new().parse("cond -> return not a; break; -> return not a; break; end").is_ok());
     }
 
     #[test]

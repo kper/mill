@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::ast::{Program, Expr, Term, Opcode, Statement, Func};
+use crate::ast::{Program, Expr, Term, Opcode, Statement, Func, Continuation, Guard};
 
 grammar;
 
@@ -15,14 +15,7 @@ Comma<T>: Vec<T> = {
 };
 
 SemiComma<T>: Vec<T> = { 
-    <v:(<T> ";")*> <e:T?> => match e {
-        None => v,
-        Some(e) => {
-            let mut v = v;
-            v.push(e);
-            v
-        }
-    }
+    <v:(<T> ";")*> => v
 };
 
 pub Pars = Comma<Id>;
@@ -37,8 +30,29 @@ pub Statements = SemiComma<Statement>;
 
 pub Statement: Box<Statement> = {
 	"return" <e:Expr> => Box::new(Statement::Ret(e)),
-	"var" <id:Id> "=" <e:Expr> => Box::new(Statement::Assign(id, e)),
+    "var" <id:Id> "=" <e:Expr> => Box::new(Statement::Assign(id, e)),
+    <id:Id> ":" <cond:Conditional> => Box::new(Statement::Conditional(Some(id), cond)),
+    <cond:Conditional> => Box::new(Statement::Conditional(None, cond)),
 	<id:Id> "=" <e:Expr> => Box::new(Statement::ReAssign(id, e))
+};
+
+pub Conditional: Vec<Box<Guard>> = {
+    "cond" <guards:SemiComma<Guard>> "end" => guards
+};
+
+pub Guard: Box<Guard> = {
+    <e:Expr?> "->" <stats:Statements> <cont:Continuation> => Box::new(Guard {
+        guard: e,
+        statements: stats,
+        continuation: cont,
+    })
+};
+
+Continuation: Continuation = {
+    "continue" => Continuation::Continue(None),
+    "break" => Continuation::Break(None),
+    "continue" <id:Id> => Continuation::Continue(Some(id)),
+    "break" <id:Id> => Continuation::Break(Some(id)),
 };
 
 pub Expr: Box<Expr> = {
