@@ -1,5 +1,5 @@
 use crate::codegen::Codegen;
-use crate::symbol_table::SymbolTable;
+use crate::symbol_table::{SymbolTable, LLVMSymbolTable};
 use crate::visitors::CheckIfFunctionCallExistsVisitor;
 use crate::visitors::CodegenVisitor;
 use std::collections::HashSet;
@@ -57,7 +57,8 @@ impl Program {
 
         let mut codegen = Codegen::new(&context, module);
 
-        <Program as CodegenVisitor>::visit(&self, &mut codegen, &functions)?;
+        //<Program as CodegenVisitor>::visit(&self, &mut codegen, &functions)?;
+        codegen.visit_program(self)?;
 
         codegen.write_bitcode(path)?;
 
@@ -80,7 +81,7 @@ pub struct Func {
     pub id: IdTy,
     pub pars: Vec<IdTy>,
     pub statements: Vec<Box<Statement>>,
-    /// Symbol table for variables
+    /// Symbol table for xxx
     symbol_table: SymbolTable,
 }
 
@@ -232,7 +233,7 @@ pub enum Opcode {
 
 #[derive(Debug)]
 pub enum Term {
-    Num(i32),
+    Num(i64),
     Id(IdTy),
     Call(IdTy, Vec<Box<Expr>>),
 }

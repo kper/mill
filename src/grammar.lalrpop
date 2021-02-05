@@ -94,4 +94,4 @@ pub Term: Box<Term> = {
 };
 
 pub Id: String = <s:r"[a-zA-Z][a-zA-Z0-9]*"> => s.to_string();
-Num: i32 = <s:r"[0-9]+"> => i32::from_str(s).unwrap();
+Num: i64= <s:r"[0-9]+"> => i64::from_str(s).unwrap();

@@ -1,7 +1,8 @@
-use crate::symbol_table::SymbolTable;
-use crate::ast::IdTy;
-use crate::ast::Error;
+use crate::ast::*;
 use crate::codegen::Codegen;
+use crate::symbol_table::{Key, LLVMSymbolTable, SymbolTable, Value};
+use std::borrow::Cow;
+use inkwell::values::{BasicValue, BasicValueEnum, FunctionValue};
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -14,5 +15,18 @@ pub trait CheckIfFunctionCallExistsVisitor {
 }
 
 pub trait CodegenVisitor<'ctx> {
-    fn visit(&self, codgen: &'ctx mut Codegen, functions: &SymbolTable) -> Result<()>;
+    fn visit_program(&mut self, program: &mut Program) -> Result<()>;
+    fn visit_func(&mut self, func: &mut Func) -> Result<()>;
+    fn visit_statement(
+        &mut self,
+        stmt: &Statement,
+    ) -> Result<()>;
+    fn visit_expr(
+        &mut self,
+        expr: &Expr,
+    ) -> Option<Cow<Value>>;
+    fn visit_term(
+        &mut self,
+        term: &Term,
+    ) -> Option<Cow<Value>>;
 }
