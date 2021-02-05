@@ -19,7 +19,7 @@ pub struct Codegen<'ctx> {
     module: Module<'ctx>,
     builder: Builder<'ctx>,
     execution_engine: ExecutionEngine<'ctx>,
-    symbol_table: LLVMSymbolTable,
+    symbol_table: LLVMSymbolTable<'ctx>,
 }
 
 impl<'ctx> Codegen<'ctx> {
@@ -39,7 +39,7 @@ impl<'ctx> Codegen<'ctx> {
             module,
             builder: context.create_builder(),
             execution_engine,
-            symbol_table: LLVMSymbolTable::default()
+            symbol_table: LLVMSymbolTable::default(),
         }
     }
 
@@ -82,33 +82,29 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
             self.visit_statement(stmt)?;
         }
 
-        //TODO clear syms
+        self.symbol_table.clear();
 
         Ok(())
     }
 
-    fn visit_statement(
-        &mut self,
-        stmt: &Statement,
-    ) -> Result<()> {
+    fn visit_statement(&mut self, stmt: &Statement) -> Result<()> {
         //let sum = self.builder.build_int_add(x, y, "sum");
         //self.builder.build_return(Some(&sum));
 
         match stmt {
             Statement::Ret(expr) => {
-                let res = self.visit_expr(expr);
-                //self.builder.build_return(res);
+                let res = self.visit_expr(expr).map(|x| x.into_owned());
+                let ret: Option<&dyn BasicValue> = res.as_ref().map(|x| x as &dyn BasicValue);
+
+                self.builder.build_return(ret);
             }
-            _ => unimplemented!()
+            _ => unimplemented!(),
         }
 
         Ok(())
     }
 
-    fn visit_expr(
-        &mut self,
-        expr: &Expr,
-    ) -> Option<Cow<Value>> {
+    fn visit_expr(&mut self, expr: &Expr) -> Option<Cow<BasicValueEnum<'ctx>>> {
         match expr {
             Expr::Single(term) => {
                 return self.visit_term(term);
@@ -117,15 +113,11 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
         }
     }
 
-    fn visit_term(
-        &mut self,
-        term: &Term,
-    ) -> Option<Cow<Value>> {
+    fn visit_term(&mut self, term: &Term) -> Option<Cow<BasicValueEnum<'ctx>>> {
         match term {
             Term::Num(num) => {
                 let i64_type = self.context.i64_type();
-                let obj = Value::Int(*num as i64); 
-                //BasicValueEnum::IntValue(i64_type.const_int(*num as u64, false));
+                let obj = BasicValueEnum::IntValue(i64_type.const_int(*num as u64, false));
 
                 return Some(Cow::Owned(obj));
             }

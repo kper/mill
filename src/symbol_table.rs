@@ -32,26 +32,29 @@ pub enum Value {
 }
 
 #[derive(Debug, Default)]
-pub struct LLVMSymbolTable {
-    symbols: HashMap<Key, Value>,
-    counter: usize,
+pub struct LLVMSymbolTable<'a> {
+    symbols: HashMap<Key, BasicValueEnum<'a>>,
 }
 
-impl LLVMSymbolTable {
+impl<'a> LLVMSymbolTable<'a> {
     pub fn lookup_symbol(&self, sym: &IdTy) -> bool {
         self.symbols.contains_key(sym)
     }
 
-    pub fn get(&self, sym: &IdTy) -> Option<&Value> {
+    pub fn get(&self, sym: &IdTy) -> Option<&BasicValueEnum<'a>> {
         self.symbols.get(sym)
     }
 
-    pub fn insert(&mut self, sym: &IdTy, val: Value) -> Result<()> {
+    pub fn insert(&mut self, sym: &IdTy, val: BasicValueEnum<'a>) -> Result<()> {
         if !self.lookup_symbol(sym) {
             self.symbols.insert(sym.clone(), val);
             Ok(())
         } else {
             return Err(Error::SymbolAlreadyDefined(sym.to_string()));
         }
+    }
+
+    pub fn clear(&mut self) {
+        self.symbols.clear();
     }
 }

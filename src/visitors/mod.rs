@@ -24,9 +24,9 @@ pub trait CodegenVisitor<'ctx> {
     fn visit_expr(
         &mut self,
         expr: &Expr,
-    ) -> Option<Cow<Value>>;
+    ) -> Option<Cow<BasicValueEnum<'ctx>>>;
     fn visit_term(
         &mut self,
         term: &Term,
-    ) -> Option<Cow<Value>>;
+    ) -> Option<Cow<BasicValueEnum<'ctx>>>;
 }
