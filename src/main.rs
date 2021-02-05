@@ -9,6 +9,7 @@ use crate::visitors::CheckIfFunctionCallExistsVisitor;
 mod ast;
 mod symbol_table;
 mod visitors;
+mod codegen;
 
 lalrpop_mod!(pub grammar);
 
@@ -28,7 +29,7 @@ fn main() {
 
     //println!("{}", content);
 
-    let ast = grammar::ProgramParser::new().parse(&content).unwrap();
+    let mut ast = grammar::ProgramParser::new().parse(&content).unwrap();
 
     println!("{:#?}", ast);
 
@@ -39,6 +40,10 @@ fn main() {
     let functions = ast.get_function_names().unwrap();
 
     if let Err(err) = ast.visit(&functions) {
+        panic!("{:?}", err);
+    }
+
+    if let Err(err) = ast.codegen("main.bc") {
         panic!("{:?}", err);
     }
 }

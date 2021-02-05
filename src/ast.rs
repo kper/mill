@@ -1,6 +1,8 @@
-use std::collections::HashSet;
+use crate::codegen::Codegen;
 use crate::symbol_table::SymbolTable;
 use crate::visitors::CheckIfFunctionCallExistsVisitor;
+use crate::visitors::CodegenVisitor;
+use std::collections::HashSet;
 
 pub type IdTy = String;
 type Result<T> = std::result::Result<T, Error>;
@@ -9,7 +11,7 @@ type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     SymbolAlreadyDefined(IdTy),
     SymbolNotDefined(IdTy),
-    FunctionNotDefined(IdTy)
+    FunctionNotDefined(IdTy),
 }
 
 #[derive(Debug)]
@@ -44,12 +46,29 @@ impl Program {
 
         return false;
     }
+
+    pub fn codegen(&mut self, path: &str) -> Result<()> {
+        use inkwell::context::Context;
+
+        let functions = self.get_function_names()?;
+
+        let context = Context::create();
+        let module = context.create_module("main");
+
+        let mut codegen = Codegen::new(&context, module);
+
+        <Program as CodegenVisitor>::visit(&self, &mut codegen, &functions)?;
+
+        codegen.write_bitcode(path)?;
+
+        Ok(())
+    }
 }
 
 impl CheckIfFunctionCallExistsVisitor for Program {
     fn visit(&self, symbol_table: &SymbolTable) -> Result<bool> {
         for function in &self.functions {
-            function.visit(symbol_table)?;
+            <Func as CheckIfFunctionCallExistsVisitor>::visit(function, symbol_table)?;
         }
 
         Ok(true)
@@ -71,14 +90,12 @@ impl Func {
 
         for stmt in statements.iter() {
             match &**stmt {
-                Statement::Assign(id, _) => {
-                    symbol_table.insert(id)?
-                },
+                Statement::Assign(id, _) => symbol_table.insert(id)?,
                 Statement::ReAssign(id, _) => {
                     if !symbol_table.lookup_symbol(&id) {
                         return Err(Error::SymbolNotDefined(id.to_string()));
                     }
-                },
+                }
                 _ => {}
             }
         }
@@ -87,7 +104,7 @@ impl Func {
             id,
             pars,
             statements,
-            symbol_table 
+            symbol_table,
         })
     }
 }
@@ -95,14 +112,12 @@ impl Func {
 impl CheckIfFunctionCallExistsVisitor for Func {
     fn visit(&self, symbol_table: &SymbolTable) -> Result<bool> {
         for stmt in &self.statements {
-            stmt.visit(symbol_table)?;
+            <Statement as CheckIfFunctionCallExistsVisitor>::visit(stmt, symbol_table)?;
         }
 
         Ok(true)
     }
 }
-
-
 
 #[derive(Debug)]
 pub enum Statement {
@@ -114,14 +129,19 @@ pub enum Statement {
 
 impl CheckIfFunctionCallExistsVisitor for Statement {
     fn visit(&self, symbol_table: &SymbolTable) -> Result<bool> {
-
         match &*self {
-            Statement::Ret(expr) => { expr.visit(symbol_table)?; },
-            Statement::Assign(_, expr) => { expr.visit(symbol_table)?; },
-            Statement::ReAssign(_, expr) => { expr.visit(symbol_table)?; },
-            Statement::Conditional(_, guards) => { 
+            Statement::Ret(expr) => {
+                <Expr as CheckIfFunctionCallExistsVisitor>::visit(&expr, symbol_table)?;
+            }
+            Statement::Assign(_, expr) => {
+                <Expr as CheckIfFunctionCallExistsVisitor>::visit(&expr, symbol_table)?;
+            }
+            Statement::ReAssign(_, expr) => {
+                <Expr as CheckIfFunctionCallExistsVisitor>::visit(&expr, symbol_table)?;
+            }
+            Statement::Conditional(_, guards) => {
                 for guard in guards {
-                    guard.visit(symbol_table)?;
+                    <Guard as CheckIfFunctionCallExistsVisitor>::visit(&guard, symbol_table)?;
                 }
             }
         }
@@ -134,18 +154,17 @@ impl CheckIfFunctionCallExistsVisitor for Statement {
 pub struct Guard {
     pub guard: Option<Box<Expr>>,
     pub statements: Vec<Box<Statement>>,
-    pub continuation: Continuation, 
+    pub continuation: Continuation,
 }
 
 impl CheckIfFunctionCallExistsVisitor for Guard {
     fn visit(&self, symbol_table: &SymbolTable) -> Result<bool> {
-
         if let Some(expr) = &self.guard {
-            expr.visit(symbol_table)?;
+            <Expr as CheckIfFunctionCallExistsVisitor>::visit(&expr, symbol_table)?;
         }
 
         for stmt in &self.statements {
-            stmt.visit(symbol_table)?;
+            <Statement as CheckIfFunctionCallExistsVisitor>::visit(&stmt, symbol_table)?;
         }
 
         Ok(true)
@@ -169,26 +188,25 @@ pub enum Expr {
     // >=, ==
     Dual(Opcode, Box<Term>, Box<Term>),
     Single(Box<Term>),
-} 
+}
 
 impl CheckIfFunctionCallExistsVisitor for Expr {
     fn visit(&self, symbol_table: &SymbolTable) -> Result<bool> {
-
         match &*self {
             Expr::Chained(_, term, expr) => {
-                term.visit(symbol_table)?;
-                expr.visit(symbol_table)?;
-            },
+                <Term as CheckIfFunctionCallExistsVisitor>::visit(&term, symbol_table)?;
+                <Expr as CheckIfFunctionCallExistsVisitor>::visit(&expr, symbol_table)?;
+            }
             Expr::Unchained(_, term) => {
-                term.visit(symbol_table)?;
-            },
+                <Term as CheckIfFunctionCallExistsVisitor>::visit(&term, symbol_table)?;
+            }
             Expr::Dual(_, term1, term2) => {
-                term1.visit(symbol_table)?;
-                term2.visit(symbol_table)?;
-            },
+                <Term as CheckIfFunctionCallExistsVisitor>::visit(&term1, symbol_table)?;
+                <Term as CheckIfFunctionCallExistsVisitor>::visit(&term2, symbol_table)?;
+            }
             Expr::Single(term) => {
-                term.visit(symbol_table)?;
-            },
+                <Term as CheckIfFunctionCallExistsVisitor>::visit(&term, symbol_table)?;
+            }
             _ => {}
         }
 
@@ -221,10 +239,8 @@ pub enum Term {
 
 impl CheckIfFunctionCallExistsVisitor for Term {
     fn visit(&self, symbol_table: &SymbolTable) -> Result<bool> {
-
         match &*self {
             Term::Call(id, exprs) => {
-                
                 if !symbol_table.lookup_symbol(&id) {
                     return Err(Error::FunctionNotDefined(id.to_string()));
                 }
@@ -232,7 +248,7 @@ impl CheckIfFunctionCallExistsVisitor for Term {
                 for expr in exprs {
                     expr.visit(symbol_table)?;
                 }
-            },
+            }
             _ => {}
         }
 
