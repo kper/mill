@@ -4,9 +4,11 @@ extern crate lalrpop_util;
 use std::env;
 use std::fs::File;
 use std::io::Read;
+use crate::visitors::CheckIfFunctionCallExistsVisitor;
 
 mod ast;
 mod symbol_table;
+mod visitors;
 
 lalrpop_mod!(pub grammar);
 
@@ -32,6 +34,12 @@ fn main() {
 
     if ast.check_duplicated_names() {
         panic!("Function defined multiple times");
+    }
+
+    let functions = ast.get_function_names().unwrap();
+
+    if let Err(err) = ast.visit(&functions) {
+        panic!("{:?}", err);
     }
 }
 
@@ -203,6 +211,36 @@ mod tests {
             true,
             parsed.check_duplicated_names(),
             "Function name collision was not detected."
+        );
+    }
+
+    #[test]
+    fn test_function_calls_when_not_defined() {
+        use crate::visitors::CheckIfFunctionCallExistsVisitor;
+
+        let parsed = grammar::ProgramParser::new()
+            .parse("x(a,b,c) return k(a, b); end;")
+            .unwrap();
+
+        let functions = parsed.get_function_names().unwrap();
+        assert_eq!(
+            parsed.visit(&functions).unwrap_err(),
+            Error::FunctionNotDefined("k".to_string())
+        );
+    }
+
+    #[test]
+    fn test_function_calls_when_defined() {
+        use crate::visitors::CheckIfFunctionCallExistsVisitor;
+
+        let parsed = grammar::ProgramParser::new()
+            .parse("x(a,b,c) return k(a, b); end; k(a, b) return 1; end;")
+            .unwrap();
+
+        let functions = parsed.get_function_names().unwrap();
+        assert_eq!(
+            parsed.visit(&functions),
+            Ok(true)
         );
     }
 }

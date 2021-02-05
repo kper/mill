@@ -4,7 +4,7 @@ use crate::ast::{IdTy, Error};
 type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Default)]
-pub(crate) struct SymbolTable {
+pub struct SymbolTable {
     symbols: HashSet<IdTy>,
 }
 
@@ -13,13 +13,13 @@ impl SymbolTable {
         self.symbols.contains(sym)
     }
 
-    pub fn insert(&mut self, sym: IdTy) -> Result<()> {
-        if !self.lookup_symbol(&sym) {
-            self.symbols.insert(sym);
+    pub fn insert(&mut self, sym: &IdTy) -> Result<()> {
+        if !self.lookup_symbol(sym) {
+            self.symbols.insert(sym.clone());
             Ok(())
         }
         else {
-            return Err(Error::SymbolAlreadyDefined(sym));
+            return Err(Error::SymbolAlreadyDefined(sym.to_string()));
         }
     }
 }
