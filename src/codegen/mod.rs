@@ -99,6 +99,20 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
 
                 self.builder.build_return(ret);
             }
+            Statement::Assign(id, expr) => {
+                let res = self.visit_expr(expr).map(|x| x.into_owned());
+
+                if let Some(val) = res {
+                    let i64_type = self.context.i64_type();
+                    let ptr = self.builder.build_alloca(i64_type, id);
+
+                    let _instr = self.builder.build_store(ptr, val);
+                    self.symbol_table
+                        .insert(id, BasicValueEnum::PointerValue(ptr))?;
+                } else {
+                    panic!("No value found");
+                }
+            }
             _ => unimplemented!(),
         }
 
@@ -213,8 +227,13 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 return Some(Cow::Owned(obj));
             }
             Term::Id(id) => {
-                //TODO add check if not existing
-                return self.symbol_table.get(id).map(|x| Cow::Borrowed(x));
+                let var = self.symbol_table.get(id).map(|x| Cow::Borrowed(x));
+                if let Some(var) = var {
+                    let ptr = var.into_pointer_value();
+                    return Some(Cow::Owned(self.builder.build_load(ptr, id)));
+                } else {
+                    panic!("No entry in symbol table");
+                }
             }
             _ => return None,
         }
