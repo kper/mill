@@ -1,5 +1,5 @@
 use crate::ast::{Error, IdTy};
-use inkwell::values::{BasicValue, BasicValueEnum};
+use inkwell::values::{BasicValueEnum};
 use std::collections::HashMap;
 use std::collections::HashSet;
 
@@ -24,11 +24,6 @@ impl SymbolTable {
             return Err(Error::SymbolAlreadyDefined(sym.to_string()));
         }
     }
-}
-
-#[derive(Debug, Hash, Clone)]
-pub enum Value {
-    Int(i64),
 }
 
 #[derive(Debug, Default)]

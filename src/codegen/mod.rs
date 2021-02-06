@@ -1,5 +1,5 @@
 use crate::ast::*;
-use crate::symbol_table::{Key, LLVMSymbolTable, SymbolTable, Value};
+use crate::symbol_table::LLVMSymbolTable;
 use crate::visitors::CodegenVisitor;
 use std::borrow::Cow;
 use std::path::Path;
@@ -9,9 +9,8 @@ use inkwell::context::Context;
 use inkwell::execution_engine::ExecutionEngine;
 use inkwell::module::Module;
 use inkwell::targets::{InitializationConfig, Target};
-use inkwell::values::{BasicValue, BasicValueEnum, FunctionValue};
+use inkwell::values::{BasicValue, BasicValueEnum};
 use inkwell::IntPredicate;
-use inkwell::OptimizationLevel;
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -19,27 +18,22 @@ pub struct Codegen<'ctx> {
     context: &'ctx Context,
     module: Module<'ctx>,
     builder: Builder<'ctx>,
-    execution_engine: ExecutionEngine<'ctx>,
+    //execution_engine: ExecutionEngine<'ctx>,
     symbol_table: LLVMSymbolTable<'ctx>,
 }
 
 impl<'ctx> Codegen<'ctx> {
     pub fn new(context: &'ctx Context, module: Module<'ctx>) -> Codegen<'ctx> {
-        /*
-        let execution_engine = module
-            .create_jit_execution_engine(OptimizationLevel::None)
-            .unwrap();*/
-
         Target::initialize_native(&InitializationConfig::default())
             .expect("Failed to initialize native target");
 
-        let execution_engine = module.create_execution_engine().unwrap();
+        //let execution_engine = module.create_execution_engine().unwrap();
 
         Codegen {
             context: context,
             module,
             builder: context.create_builder(),
-            execution_engine,
+            //execution_engine,
             symbol_table: LLVMSymbolTable::default(),
         }
     }
@@ -77,8 +71,15 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
 
         builder.position_at_end(basic_block);
 
-        //let x = llvm_function.get_nth_param(0).unwrap().into_int_value();
-        //let y = llvm_function.get_nth_param(1).unwrap().into_int_value();
+        for (i, param) in func.pars.iter().enumerate() {
+            let ptr = function
+                .get_nth_param(i as u32)
+                .unwrap()
+                .into_pointer_value();
+            self.symbol_table
+                .insert(param, BasicValueEnum::PointerValue(ptr))?;
+        }
+
         for stmt in func.statements.iter() {
             self.visit_statement(stmt)?;
         }
@@ -89,9 +90,6 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
     }
 
     fn visit_statement(&mut self, stmt: &Statement) -> Result<()> {
-        //let sum = self.builder.build_int_add(x, y, "sum");
-        //self.builder.build_return(Some(&sum));
-
         match stmt {
             Statement::Ret(expr) => {
                 let res = self.visit_expr(expr).map(|x| x.into_owned());
@@ -151,7 +149,6 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
             }
             Expr::Unchained(Opcode::Not, term) => {
                 let res = self.visit_term(term).map(|x| x.into_owned());
-                //let value: Option<&dyn BasicValue> = res.as_ref().map(|x| x as &dyn BasicValue);
 
                 if let Some(val) = res {
                     let neg = self
@@ -163,7 +160,7 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     panic!("no value found");
                 }
             }
-            Expr::Unchained(_, term) => {
+            Expr::Unchained(_, _term) => {
                 panic!("Opcode not supported");
             }
             Expr::Dual(Opcode::Cmp, lhs, rhs) => {
@@ -254,50 +251,3 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
         }
     }
 }
-
-/*
-impl<'ctx> CodegenVisitor<'ctx> for Program {
-    fn visit_program(&self, functions: &SymbolTable) -> Result<()>;
-}
-
-impl<'ctx> CodegenVisitor<'ctx> for Func {
-    fn visit(&self, codegen: &'ctx mut Codegen, functions: &SymbolTable) -> Result<()> {
-        let context = &codegen.context;
-        let module = &codegen.module;
-        let builder = &codegen.builder;
-
-        let i64_type = context.i64_type();
-        let fn_type = i64_type.fn_type(&[i64_type.into(), i64_type.into()], false);
-        let function = module.add_function(&self.id, fn_type, None);
-        let basic_block = context.append_basic_block(function, &self.id);
-
-        builder.position_at_end(basic_block);
-
-        for stmt in &self.statements {
-            stmt.codegen(codegen, &function, functions)?;
-        }
-
-        Ok(())
-    }
-}
-*/
-
-/*
-impl Statement {
-    pub fn codegen<'ctx>(
-        &self,
-        codegen: &'ctx mut Codegen,
-        function: &'ctx FunctionValue,
-        functions: &SymbolTable,
-    ) -> Result<()> {
-        let x = function.get_nth_param(0).unwrap().into_int_value();
-        let y = function.get_nth_param(1).unwrap().into_int_value();
-
-        let sum = codegen.builder.build_int_add(x, y, "sum");
-
-        codegen.builder.build_return(Some(&sum));
-
-        Ok(())
-    }
-}
-*/

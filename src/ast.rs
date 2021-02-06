@@ -1,5 +1,5 @@
 use crate::codegen::Codegen;
-use crate::symbol_table::{SymbolTable, LLVMSymbolTable};
+use crate::symbol_table::{SymbolTable};
 use crate::visitors::CheckIfFunctionCallExistsVisitor;
 use crate::visitors::CodegenVisitor;
 use std::collections::HashSet;
@@ -49,8 +49,6 @@ impl Program {
 
     pub fn codegen(&mut self, path: &str) -> Result<()> {
         use inkwell::context::Context;
-
-        let functions = self.get_function_names()?;
 
         let context = Context::create();
         let module = context.create_module("main");
