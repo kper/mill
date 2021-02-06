@@ -45,7 +45,7 @@ impl<'ctx> Codegen<'ctx> {
         Ok(())
     }
 
-    pub fn get_IR(&self) -> String {
+    pub fn get_ir(&self) -> String {
         self.module.print_to_string().to_string()
     }
 }

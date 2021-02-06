@@ -47,7 +47,7 @@ impl Program {
         return false;
     }
 
-    pub fn codegen(&mut self) -> Result<Codegen> {
+    pub fn codegen_to_file(&mut self, path: &str) -> Result<()> {
         use inkwell::context::Context;
 
         let context = Context::create();
@@ -57,7 +57,22 @@ impl Program {
 
         codegen.visit_program(self)?;
 
-        Ok(codegen)
+        codegen.write_bitcode(path)?;
+
+        Ok(())
+    }
+
+    pub fn codegen_to_ir(&mut self) -> Result<String> {
+        use inkwell::context::Context;
+
+        let context = Context::create();
+        let module = context.create_module("main");
+
+        let mut codegen = Codegen::new(&context, module);
+
+        codegen.visit_program(self)?;
+
+        Ok(codegen.get_IR())
     }
 }
 
