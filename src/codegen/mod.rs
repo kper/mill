@@ -171,6 +171,35 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     panic!("No value found");
                 }
             }
+            Expr::Chained(op, lhs, rhs) => {
+                let lhs = self.visit_term(lhs).map(|x| x.into_owned());
+                let rhs = self.visit_expr(rhs).map(|x| x.into_owned());
+
+                if let (Some(lhs), Some(rhs)) = (lhs, rhs) {
+                    let res = match op {
+                        Opcode::Add => self.builder.build_int_add(
+                            lhs.into_int_value(),
+                            rhs.into_int_value(),
+                            &self.symbol_table.get_new_name(),
+                        ),
+                        Opcode::Mul => self.builder.build_int_mul(
+                            lhs.into_int_value(),
+                            rhs.into_int_value(),
+                            &self.symbol_table.get_new_name(),
+                        ),
+                        Opcode::Sub => self.builder.build_int_sub(
+                            lhs.into_int_value(),
+                            rhs.into_int_value(),
+                            &self.symbol_table.get_new_name(),
+                        ),
+                        _ => panic!("opcode not supported"),
+                    };
+
+                    return Some(Cow::Owned(BasicValueEnum::IntValue(res)));
+                } else {
+                    panic!("No value found");
+                }
+            }
             _ => return None,
         }
     }
