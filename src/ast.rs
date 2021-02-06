@@ -72,7 +72,7 @@ impl Program {
 
         codegen.visit_program(self)?;
 
-        Ok(codegen.get_IR())
+        Ok(codegen.get_ir())
     }
 }
 
