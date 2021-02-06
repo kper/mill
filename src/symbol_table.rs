@@ -34,6 +34,7 @@ pub enum Value {
 #[derive(Debug, Default)]
 pub struct LLVMSymbolTable<'a> {
     symbols: HashMap<Key, BasicValueEnum<'a>>,
+    counter: usize,
 }
 
 impl<'a> LLVMSymbolTable<'a> {
@@ -56,5 +57,13 @@ impl<'a> LLVMSymbolTable<'a> {
 
     pub fn clear(&mut self) {
         self.symbols.clear();
+    }
+
+    pub fn get_new_name(&mut self) -> String {
+        let val = self.counter;
+        let sval = format!("{}", val);
+        self.counter += 1;
+
+        sval 
     }
 }

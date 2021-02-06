@@ -10,6 +10,7 @@ use inkwell::execution_engine::ExecutionEngine;
 use inkwell::module::Module;
 use inkwell::targets::{InitializationConfig, Target};
 use inkwell::values::{BasicValue, BasicValueEnum, FunctionValue};
+use inkwell::IntPredicate;
 use inkwell::OptimizationLevel;
 
 type Result<T> = std::result::Result<T, Error>;
@@ -106,8 +107,52 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
 
     fn visit_expr(&mut self, expr: &Expr) -> Option<Cow<BasicValueEnum<'ctx>>> {
         match expr {
+            Expr::Num(num) => {
+                let i64_type = self.context.i64_type();
+                let obj = BasicValueEnum::IntValue(i64_type.const_int(*num as u64, false));
+
+                return Some(Cow::Owned(obj));
+            }
+            Expr::Id(id) => {
+                //TODO add check if not existing
+                return self.symbol_table.get(id).map(|x| Cow::Borrowed(x));
+            }
             Expr::Single(term) => {
                 return self.visit_term(term);
+            }
+            Expr::Unchained(Opcode::Not, term) => {
+                let res = self.visit_term(term).map(|x| x.into_owned());
+                //let value: Option<&dyn BasicValue> = res.as_ref().map(|x| x as &dyn BasicValue);
+
+                if let Some(val) = res {
+                    let neg = self
+                        .builder
+                        .build_not(val.into_int_value(), &self.symbol_table.get_new_name());
+
+                    return Some(Cow::Owned(BasicValueEnum::IntValue(neg)));
+                } else {
+                    panic!("no value found");
+                }
+            }
+            Expr::Unchained(_, term) => {
+                panic!("Opcode not supported");
+            }
+            Expr::Dual(Opcode::Cmp, lhs, rhs) => {
+                let lhs = self.visit_term(lhs).map(|x| x.into_owned());
+                let rhs = self.visit_term(rhs).map(|x| x.into_owned());
+
+                if let (Some(lhs), Some(rhs)) = (lhs, rhs) {
+                    let eq = self.builder.build_int_compare(
+                        IntPredicate::EQ,
+                        lhs.into_int_value(),
+                        rhs.into_int_value(),
+                        &self.symbol_table.get_new_name(),
+                    );
+
+                    return Some(Cow::Owned(BasicValueEnum::IntValue(eq)));
+                } else {
+                    panic!("No value found");
+                }
             }
             _ => return None,
         }
@@ -122,6 +167,7 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 return Some(Cow::Owned(obj));
             }
             Term::Id(id) => {
+                //TODO add check if not existing
                 return self.symbol_table.get(id).map(|x| Cow::Borrowed(x));
             }
             _ => return None,
