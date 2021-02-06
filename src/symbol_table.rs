@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::ast::{Error, IdTy};
 use inkwell::values::{BasicValueEnum, FunctionValue};
 use std::collections::HashMap;

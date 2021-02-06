@@ -1,6 +1,6 @@
 use crate::ast::*;
 use crate::symbol_table::SymbolTable;
-use inkwell::values::{BasicValueEnum, FunctionValue};
+use inkwell::values::BasicValueEnum;
 use std::borrow::Cow;
 
 type Result<T> = std::result::Result<T, Error>;

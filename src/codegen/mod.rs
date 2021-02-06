@@ -8,7 +8,7 @@ use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::targets::{InitializationConfig, Target};
-use inkwell::values::{BasicValue, BasicValueEnum, FunctionValue};
+use inkwell::values::{BasicValue, BasicValueEnum};
 use inkwell::IntPredicate;
 
 type Result<T> = std::result::Result<T, Error>;
@@ -57,7 +57,6 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
         for func in program.functions.iter_mut() {
             let context = &self.context;
             let module = &self.module;
-            let builder = &self.builder;
 
             let i64_type = context.i64_type();
 
@@ -77,7 +76,6 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
 
     fn visit_func(&mut self, func: &'ctx mut Func) -> Result<()> {
         let context = &self.context;
-        let module = &self.module;
         let builder = &self.builder;
 
         let func_ref = self.function_table.get(&func.id).unwrap();
@@ -283,7 +281,6 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     panic!("Function not found");
                 }
             }
-            _ => return None,
         }
     }
 }
