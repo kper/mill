@@ -63,3 +63,12 @@ fn test_call_when_names_not_in_order() {
     compile!("main() var a = 1; return f(a); end; f(a) return a; end;");
 }
 
+#[test]
+fn test_one_guard_with_expr() {
+    compile!("main() cond 1 -> return 2; break; end; end;");
+}
+
+#[test]
+fn test_mixed_guards() {
+    compile!("main() cond 1 -> var a = 2; break; -> return 3; break; end; end;");
+}

@@ -4,18 +4,17 @@ use crate::visitors::CodegenVisitor;
 use std::borrow::Cow;
 use std::path::Path;
 
+use anyhow::{bail, Context, Result};
 use inkwell::builder::Builder;
-use inkwell::context::Context;
+use inkwell::context::Context as LLVM_Context;
 use inkwell::module::Module;
 use inkwell::targets::{InitializationConfig, Target};
-use inkwell::values::{BasicValue, BasicValueEnum};
+use inkwell::values::{BasicValue, BasicValueEnum, FunctionValue};
 use inkwell::IntPredicate;
-use anyhow::Result;
 use log::debug;
 
-
 pub struct Codegen<'ctx> {
-    context: &'ctx Context,
+    context: &'ctx LLVM_Context,
     module: Module<'ctx>,
     builder: Builder<'ctx>,
     //execution_engine: ExecutionEngine<'ctx>,
@@ -24,7 +23,7 @@ pub struct Codegen<'ctx> {
 }
 
 impl<'ctx> Codegen<'ctx> {
-    pub fn new(context: &'ctx Context, module: Module<'ctx>) -> Codegen<'ctx> {
+    pub fn new(context: &'ctx LLVM_Context, module: Module<'ctx>) -> Codegen<'ctx> {
         Target::initialize_native(&InitializationConfig::default())
             .expect("Failed to initialize native target");
 
@@ -106,7 +105,7 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
         }
 
         for stmt in func.statements.iter() {
-            self.visit_statement(stmt)?;
+            self.visit_statement(stmt, &func.id)?;
         }
 
         self.symbol_table.clear();
@@ -114,7 +113,7 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
         Ok(())
     }
 
-    fn visit_statement(&mut self, stmt: &Statement) -> Result<()> {
+    fn visit_statement(&mut self, stmt: &Statement, func: &IdTy) -> Result<()> {
         debug!("Visiting statement");
 
         match stmt {
@@ -154,7 +153,89 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     panic!("No value or ptr found");
                 }
             }
+            Statement::Conditional(id, guards) => {
+                debug!("Statement is a conditional ({:?})", id);
+
+                for guard in guards.iter() {
+                    self.visit_guard(guard, func)
+                        .context("Visiting guard in the conditional")?;
+                }
+            }
             _ => unimplemented!(),
+        }
+
+        Ok(())
+    }
+
+    fn visit_guard(&mut self, guard: &Guard, function_id: &IdTy) -> Result<()> {
+        debug!("Visiting guard");
+
+        if let Some(condition) = &guard.guard {
+            debug!("=> has a condition");
+
+            let res = self.visit_expr(&*condition).map(|x| x.into_owned());
+
+            let then_block = self.context.append_basic_block(
+                *self.function_table.get(function_id).unwrap(),
+                &self.function_table.get_new_name(),
+            );
+
+            let else_block = self.context.append_basic_block(
+                *self.function_table.get(function_id).unwrap(),
+                &self.function_table.get_new_name(),
+            );
+
+            if let Some(cond) = res {
+                self.builder.build_conditional_branch(
+                    cond.into_int_value(),
+                    then_block,
+                    else_block,
+                );
+            } else {
+                bail!("Conditional expression is None");
+            }
+
+            self.builder.position_at_end(then_block);
+
+            //TODO restore old symbols
+            for stmt in guard.statements.iter() {
+                self.visit_statement(stmt, function_id)?;
+            }
+
+            match guard.continuation {
+                Continuation::Break(None) => {
+                    self.builder.build_unconditional_branch(else_block);
+                }
+                Continuation::Continue(None) => {
+                    self.builder.build_unconditional_branch(then_block);
+                }
+                _ => panic!(""),
+            }
+
+            self.builder.position_at_end(else_block);
+        } else {
+            debug!("=> has no condition");
+
+            let basic_block = self.context.append_basic_block(
+                *self.function_table.get(function_id).unwrap(),
+                &self.function_table.get_new_name(),
+            );
+
+            self.builder.position_at_end(basic_block);
+
+            for stmt in guard.statements.iter() {
+                self.visit_statement(stmt, function_id)?;
+            }
+
+            match guard.continuation {
+                Continuation::Break(None) => {
+
+                }
+                Continuation::Continue(None) => {
+                    self.builder.build_unconditional_branch(basic_block);
+                }
+                _ => panic!(""),
+            }
         }
 
         Ok(())
