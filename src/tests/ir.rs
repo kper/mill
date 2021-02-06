@@ -29,7 +29,7 @@ fn test_assignment() {
 
 #[test]
 fn test_reassignment() {
-    compile!("main() a = 1; a = 2; end;");
+    compile!("main() var a = 1; a = 2; end;");
 }
 
 #[test]
@@ -47,4 +47,13 @@ fn test_multiple_addition_with_vars() {
     compile!("main() var a = 1; var b = 2; var c = 3; return a + b + c; end;");
 }
 
+#[test]
+fn test_call_when_names_in_order() {
+    compile!("f(a) return a; end; main() var a = 1; return f(a); end;");
+}
+
+#[test]
+fn test_call_when_names_not_in_order() {
+    compile!("main() var a = 1; return f(a); end; f(a) return a; end;");
+}
 

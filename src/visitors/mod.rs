@@ -1,6 +1,6 @@
 use crate::ast::*;
 use crate::symbol_table::SymbolTable;
-use inkwell::values::BasicValueEnum;
+use inkwell::values::{BasicValueEnum, FunctionValue};
 use std::borrow::Cow;
 
 type Result<T> = std::result::Result<T, Error>;
@@ -14,8 +14,8 @@ pub trait CheckIfFunctionCallExistsVisitor {
 }
 
 pub trait CodegenVisitor<'ctx> {
-    fn visit_program(&mut self, program: &mut Program) -> Result<()>;
-    fn visit_func(&mut self, func: &mut Func) -> Result<()>;
+    fn visit_program(&mut self, program: &'ctx mut Program) -> Result<()>;
+    fn visit_func(&mut self, func: &'ctx mut Func) -> Result<()>;
     fn visit_statement(&mut self, stmt: &Statement) -> Result<()>;
     fn visit_expr(&mut self, expr: &Expr) -> Option<Cow<BasicValueEnum<'ctx>>>;
     fn visit_term(&mut self, term: &Term) -> Option<Cow<BasicValueEnum<'ctx>>>;

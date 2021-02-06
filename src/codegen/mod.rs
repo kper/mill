@@ -1,5 +1,5 @@
 use crate::ast::*;
-use crate::symbol_table::LLVMSymbolTable;
+use crate::symbol_table::{LLVMFunctionTable, LLVMSymbolTable};
 use crate::visitors::CodegenVisitor;
 use std::borrow::Cow;
 use std::path::Path;
@@ -8,7 +8,7 @@ use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::targets::{InitializationConfig, Target};
-use inkwell::values::{BasicValue, BasicValueEnum};
+use inkwell::values::{BasicValue, BasicValueEnum, FunctionValue};
 use inkwell::IntPredicate;
 
 type Result<T> = std::result::Result<T, Error>;
@@ -19,6 +19,7 @@ pub struct Codegen<'ctx> {
     builder: Builder<'ctx>,
     //execution_engine: ExecutionEngine<'ctx>,
     symbol_table: LLVMSymbolTable<'ctx>,
+    function_table: LLVMFunctionTable<'ctx>,
 }
 
 impl<'ctx> Codegen<'ctx> {
@@ -34,6 +35,7 @@ impl<'ctx> Codegen<'ctx> {
             builder: context.create_builder(),
             //execution_engine,
             symbol_table: LLVMSymbolTable::default(),
+            function_table: LLVMFunctionTable::default(),
         }
     }
 
@@ -51,7 +53,21 @@ impl<'ctx> Codegen<'ctx> {
 }
 
 impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
-    fn visit_program(&mut self, program: &mut Program) -> Result<()> {
+    fn visit_program(&mut self, program: &'ctx mut Program) -> Result<()> {
+        for func in program.functions.iter_mut() {
+            let context = &self.context;
+            let module = &self.module;
+            let builder = &self.builder;
+
+            let i64_type = context.i64_type();
+
+            let func_types = vec![i64_type.into(); func.pars.len()];
+            let fn_type = i64_type.fn_type(&func_types, false);
+            let function = module.add_function(&func.id, fn_type, None);
+
+            self.function_table.insert(&func.id, function)?;
+        }
+
         for func in program.functions.iter_mut() {
             self.visit_func(func)?;
         }
@@ -59,25 +75,24 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
         Ok(())
     }
 
-    fn visit_func(&mut self, func: &mut Func) -> Result<()> {
+    fn visit_func(&mut self, func: &'ctx mut Func) -> Result<()> {
         let context = &self.context;
         let module = &self.module;
         let builder = &self.builder;
 
-        let i64_type = context.i64_type();
+        let func_ref = self.function_table.get(&func.id).unwrap();
 
-        let func_types = vec![i64_type.into(); func.pars.len()];
-        let fn_type = i64_type.fn_type(&func_types, false);
-        let function = module.add_function(&func.id, fn_type, None);
-        let basic_block = context.append_basic_block(function, &func.id);
+        let basic_block = context.append_basic_block(*func_ref, &func.id);
 
         builder.position_at_end(basic_block);
 
         for (i, param) in func.pars.iter().enumerate() {
-            let ptr = function
-                .get_nth_param(i as u32)
-                .unwrap()
-                .into_pointer_value();
+            let value = func_ref.get_nth_param(i as u32).unwrap();
+            let i64_type = self.context.i64_type();
+            let ptr = self.builder.build_alloca(i64_type, param);
+
+            let _instr = self.builder.build_store(ptr, value);
+
             self.symbol_table
                 .insert(param, BasicValueEnum::PointerValue(ptr))?;
         }
@@ -247,6 +262,25 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     return Some(Cow::Owned(self.builder.build_load(ptr, id)));
                 } else {
                     panic!("No entry in symbol table");
+                }
+            }
+            Term::Call(id, pars) => {
+                let arguments: Vec<_> = pars
+                    .iter()
+                    .map(|x| self.visit_expr(x).map(|x| x.into_owned()))
+                    .map(|x| x.unwrap())
+                    .collect();
+
+                if let Some(func_ref) = self.function_table.get(id) {
+                    return Some(Cow::Owned(
+                        self.builder
+                            .build_call(*func_ref, &arguments, id)
+                            .try_as_basic_value()
+                            .left()
+                            .unwrap(),
+                    ));
+                } else {
+                    panic!("Function not found");
                 }
             }
             _ => return None,

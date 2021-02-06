@@ -1,0 +1,15 @@
+---
+source: src/tests/ir.rs
+expression: ir
+
+---
+; ModuleID = 'main'
+source_filename = "main"
+
+define i64 @main() {
+main:
+  %a = alloca i64
+  store i64 1, i64* %a
+  store i64 2, i64* %a
+}
+

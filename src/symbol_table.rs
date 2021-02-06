@@ -1,5 +1,5 @@
 use crate::ast::{Error, IdTy};
-use inkwell::values::{BasicValueEnum};
+use inkwell::values::{BasicValueEnum, FunctionValue};
 use std::collections::HashMap;
 use std::collections::HashSet;
 
@@ -42,6 +42,43 @@ impl<'a> LLVMSymbolTable<'a> {
     }
 
     pub fn insert(&mut self, sym: &IdTy, val: BasicValueEnum<'a>) -> Result<()> {
+        if !self.lookup_symbol(sym) {
+            self.symbols.insert(sym.clone(), val);
+            Ok(())
+        } else {
+            return Err(Error::SymbolAlreadyDefined(sym.to_string()));
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.symbols.clear();
+    }
+
+    pub fn get_new_name(&mut self) -> String {
+        let val = self.counter;
+        let sval = format!("{}", val);
+        self.counter += 1;
+
+        sval 
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct LLVMFunctionTable<'a> {
+    symbols: HashMap<Key, FunctionValue<'a>>,
+    counter: usize,
+}
+
+impl<'a> LLVMFunctionTable<'a> {
+    pub fn lookup_symbol(&self, sym: &IdTy) -> bool {
+        self.symbols.contains_key(sym)
+    }
+
+    pub fn get(&self, sym: &IdTy) -> Option<&FunctionValue<'a>> {
+        self.symbols.get(sym)
+    }
+
+    pub fn insert(&mut self, sym: &IdTy, val: FunctionValue<'a>) -> Result<()> {
         if !self.lookup_symbol(sym) {
             self.symbols.insert(sym.clone(), val);
             Ok(())
