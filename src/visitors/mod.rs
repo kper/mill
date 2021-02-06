@@ -1,7 +1,7 @@
 use crate::ast::*;
 use crate::symbol_table::SymbolTable;
 use anyhow::Result;
-use inkwell::values::{BasicValueEnum, FunctionValue};
+use inkwell::values::{BasicValueEnum};
 use std::borrow::Cow;
 
 pub trait CheckIfFunctionCallExistsVisitor {

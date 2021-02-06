@@ -2,23 +2,10 @@ use crate::codegen::Codegen;
 use crate::symbol_table::SymbolTable;
 use crate::visitors::CheckIfFunctionCallExistsVisitor;
 use crate::visitors::CodegenVisitor;
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{bail, Result};
 use std::collections::HashSet;
 
 pub type IdTy = String;
-
-/*
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error("The symbol `{0}` is already defined.")]
-    SymbolAlreadyDefined(IdTy),
-    #[error("The symbol `{0}` is not defined.")]
-    SymbolNotDefined(IdTy),
-    #[error("The function `{0}` is not defined.")]
-    FunctionNotDefined(IdTy),
-    #[error(transparent)]
-    Other(#[from] anyhow::Error)
-}*/
 
 #[derive(Debug)]
 pub struct Program {

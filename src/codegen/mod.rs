@@ -9,7 +9,7 @@ use inkwell::builder::Builder;
 use inkwell::context::Context as LLVM_Context;
 use inkwell::module::Module;
 use inkwell::targets::{InitializationConfig, Target};
-use inkwell::values::{BasicValue, BasicValueEnum, FunctionValue};
+use inkwell::values::{BasicValue, BasicValueEnum};
 use inkwell::IntPredicate;
 use log::debug;
 
@@ -242,7 +242,6 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     self.builder
                         .build_unconditional_branch(self.block_table.get(label).unwrap().0);
                 }
-                _ => panic!(""),
             }
 
             self.builder.position_at_end(else_block);
@@ -275,7 +274,6 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     self.builder
                         .build_unconditional_branch(self.block_table.get(label).unwrap().0);
                 }
-                _ => panic!(""),
             }
         }
 
