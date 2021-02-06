@@ -1,5 +1,5 @@
 use crate::ast::*;
-use crate::symbol_table::{LLVMFunctionTable, LLVMSymbolTable};
+use crate::symbol_table::*;
 use crate::visitors::CodegenVisitor;
 use std::borrow::Cow;
 use std::path::Path;
@@ -20,6 +20,7 @@ pub struct Codegen<'ctx> {
     //execution_engine: ExecutionEngine<'ctx>,
     symbol_table: LLVMSymbolTable<'ctx>,
     function_table: LLVMFunctionTable<'ctx>,
+    block_table: LLVMBlockTable<'ctx>,
 }
 
 impl<'ctx> Codegen<'ctx> {
@@ -36,6 +37,7 @@ impl<'ctx> Codegen<'ctx> {
             //execution_engine,
             symbol_table: LLVMSymbolTable::default(),
             function_table: LLVMFunctionTable::default(),
+            block_table: LLVMBlockTable::default(),
         }
     }
 
@@ -157,18 +159,41 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 debug!("Statement is a conditional ({:?})", id);
 
                 for guard in guards.iter() {
-                    self.visit_guard(guard, func)
+                    self.visit_guard(id, guard, func)
                         .context("Visiting guard in the conditional")?;
                 }
             }
-            _ => unimplemented!(),
         }
 
         Ok(())
     }
 
-    fn visit_guard(&mut self, guard: &Guard, function_id: &IdTy) -> Result<()> {
+    fn visit_guard(
+        &mut self,
+        label: &Option<IdTy>,
+        guard: &Guard,
+        function_id: &IdTy,
+    ) -> Result<()> {
         debug!("Visiting guard");
+
+        let cond_block = self.context.append_basic_block(
+            *self.function_table.get(function_id).unwrap(),
+            &self.function_table.get_new_name(),
+        );
+
+        self.builder.build_unconditional_branch(cond_block);
+
+        let after_cond_block = self.context.append_basic_block(
+            *self.function_table.get(function_id).unwrap(),
+            &self.function_table.get_new_name(),
+        );
+        if let Some(label) = label {
+            debug!("Saving block with label {}", label);
+            self.block_table
+                .insert(label, (cond_block, after_cond_block))?;
+        }
+
+        self.builder.position_at_end(cond_block);
 
         if let Some(condition) = &guard.guard {
             debug!("=> has a condition");
@@ -207,7 +232,15 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     self.builder.build_unconditional_branch(else_block);
                 }
                 Continuation::Continue(None) => {
-                    self.builder.build_unconditional_branch(then_block);
+                    self.builder.build_unconditional_branch(cond_block);
+                }
+                Continuation::Break(Some(ref label)) => {
+                    self.builder
+                        .build_unconditional_branch(self.block_table.get(label).unwrap().1);
+                }
+                Continuation::Continue(Some(ref label)) => {
+                    self.builder
+                        .build_unconditional_branch(self.block_table.get(label).unwrap().0);
                 }
                 _ => panic!(""),
             }
@@ -229,14 +262,24 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
 
             match guard.continuation {
                 Continuation::Break(None) => {
-
+                    self.builder.build_unconditional_branch(after_cond_block);
                 }
                 Continuation::Continue(None) => {
-                    self.builder.build_unconditional_branch(basic_block);
+                    self.builder.build_unconditional_branch(cond_block);
+                }
+                Continuation::Break(Some(ref label)) => {
+                    self.builder
+                        .build_unconditional_branch(self.block_table.get(label).unwrap().1);
+                }
+                Continuation::Continue(Some(ref label)) => {
+                    self.builder
+                        .build_unconditional_branch(self.block_table.get(label).unwrap().0);
                 }
                 _ => panic!(""),
             }
         }
+
+        self.builder.position_at_end(after_cond_block);
 
         Ok(())
     }

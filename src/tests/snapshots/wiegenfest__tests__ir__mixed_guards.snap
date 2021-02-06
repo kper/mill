@@ -8,16 +8,27 @@ source_filename = "main"
 
 define i64 @main() {
 main:
-  br i64 1, label %"0", label %"1"
+  br label %"0"
 
 "0":                                              ; preds = %main
+  br i64 1, label %"2", label %"3"
+
+"1":                                              ; No predecessors!
+  br label %"4"
+
+"2":                                              ; preds = %"0"
   %a = alloca i64
   store i64 2, i64* %a
-  br label %"1"
+  br label %"3"
 
-"1":                                              ; preds = %"0", %main
+"3":                                              ; preds = %"2", %"0"
 
-"2":                                              ; No predecessors!
+"4":                                              ; preds = %"1"
+
+"5":                                              ; preds = %"6"
+
+"6":                                              ; No predecessors!
   ret i64 3
+  br label %"5"
 }
 

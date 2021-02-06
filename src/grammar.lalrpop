@@ -41,6 +41,7 @@ pub Statement: Box<Statement> = {
     "var" <id:Id> "=" <e:Expr> => Box::new(Statement::Assign(id, e)),
     <id:Id> ":" <cond:Conditional> => Box::new(Statement::Conditional(Some(id), cond)),
     <cond:Conditional> => Box::new(Statement::Conditional(None, cond)),
+    <cond:Conditional> <id:Id> ":" => Box::new(Statement::Conditional(Some(id), cond)),
 	<id:Id> "=" <e:Expr> => Box::new(Statement::ReAssign(id, e))
 };
 
@@ -70,6 +71,8 @@ pub Expr: Box<Expr> = {
     "islist" <n:Term> => Box::new(Expr::Unchained(Opcode::IsList, n)),
     <n1:Term> ">=" <n2:Term> => Box::new(Expr::Dual(Opcode::Geq, n1, n2)),
     <n1:Term> "==" <n2:Term> => Box::new(Expr::Dual(Opcode::Cmp, n1, n2)),
+    "(" <n1:Term> ">=" <n2:Term> ")" => Box::new(Expr::Dual(Opcode::Geq, n1, n2)),
+    "(" <n1:Term> "==" <n2:Term> ")" => Box::new(Expr::Dual(Opcode::Cmp, n1, n2)),
     <expr:ChainedExpr> => expr,
 };
 
