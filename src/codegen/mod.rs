@@ -113,6 +113,16 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     panic!("No value found");
                 }
             }
+            Statement::ReAssign(id, expr) => {
+                let res = self.visit_expr(expr).map(|x| x.into_owned());
+                let ptr = self.symbol_table.get(id);
+
+                if let (Some(val), Some(ptr)) = (res, ptr) {
+                    let _instr = self.builder.build_store(ptr.into_pointer_value(), val);
+                } else {
+                    panic!("No value or ptr found");
+                }
+            }
             _ => unimplemented!(),
         }
 
@@ -128,8 +138,13 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 return Some(Cow::Owned(obj));
             }
             Expr::Id(id) => {
-                //TODO add check if not existing
-                return self.symbol_table.get(id).map(|x| Cow::Borrowed(x));
+                let var = self.symbol_table.get(id).map(|x| Cow::Borrowed(x));
+                if let Some(var) = var {
+                    let ptr = var.into_pointer_value();
+                    return Some(Cow::Owned(self.builder.build_load(ptr, id)));
+                } else {
+                    panic!("No entry in symbol table");
+                }
             }
             Expr::Single(term) => {
                 return self.visit_term(term);
