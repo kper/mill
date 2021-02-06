@@ -10,10 +10,9 @@ use inkwell::module::Module;
 use inkwell::targets::{InitializationConfig, Target};
 use inkwell::values::{BasicValue, BasicValueEnum};
 use inkwell::IntPredicate;
-
+use anyhow::Result;
 use log::debug;
 
-type Result<T> = std::result::Result<T, Error>;
 
 pub struct Codegen<'ctx> {
     context: &'ctx Context,

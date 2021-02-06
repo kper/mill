@@ -51,7 +51,11 @@ fn main() {
     info!("=> Starting codegen");
 
     if let Err(err) = ast.visit(&functions) {
-        panic!("{:?}", err);
+        eprintln!("ERROR: {}", err);
+        err.chain()
+            .skip(1)
+            .for_each(|cause| eprintln!("because: {}", cause));
+        std::process::exit(1);
     }
 
     info!("=> Finished codegen");
@@ -59,7 +63,11 @@ fn main() {
 
     let codegen = ast.codegen_to_file("main.bc");
     if let Err(err) = codegen {
-        panic!("{:?}", err);
+        eprintln!("ERROR: {}", err);
+        err.chain()
+            .skip(1)
+            .for_each(|cause| eprintln!("because: {}", cause));
+        std::process::exit(1);
     }
 
     info!("=> Finished");

@@ -1,6 +1,7 @@
 use std::str::FromStr;
-use crate::ast::{Program, Expr, Term, Opcode, Statement, Func, Continuation, Guard, Error};
+use crate::ast::{Program, Expr, Term, Opcode, Statement, Func, Continuation, Guard};
 use lalrpop_util::ParseError;
+use anyhow::Error;
 
 grammar;
 

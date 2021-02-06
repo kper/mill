@@ -1,11 +1,11 @@
 #![allow(dead_code)]
 
-use crate::ast::{Error, IdTy};
+use crate::ast::IdTy;
+use anyhow::{bail, Result};
 use inkwell::values::{BasicValueEnum, FunctionValue};
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-type Result<T> = std::result::Result<T, Error>;
 pub type Key = IdTy;
 
 #[derive(Debug, Default)]
@@ -23,7 +23,7 @@ impl SymbolTable {
             self.symbols.insert(sym.clone());
             Ok(())
         } else {
-            return Err(Error::SymbolAlreadyDefined(sym.to_string()));
+            bail!("Symbol {} is already defined", sym);
         }
     }
 }
@@ -48,7 +48,7 @@ impl<'a> LLVMSymbolTable<'a> {
             self.symbols.insert(sym.clone(), val);
             Ok(())
         } else {
-            return Err(Error::SymbolAlreadyDefined(sym.to_string()));
+            bail!("Symbol {} is already defined", sym);
         }
     }
 
@@ -61,7 +61,7 @@ impl<'a> LLVMSymbolTable<'a> {
         let sval = format!("{}", val);
         self.counter += 1;
 
-        sval 
+        sval
     }
 }
 
@@ -85,7 +85,7 @@ impl<'a> LLVMFunctionTable<'a> {
             self.symbols.insert(sym.clone(), val);
             Ok(())
         } else {
-            return Err(Error::SymbolAlreadyDefined(sym.to_string()));
+            bail!("Symbol {} is already defined", sym);
         }
     }
 
@@ -98,6 +98,6 @@ impl<'a> LLVMFunctionTable<'a> {
         let sval = format!("{}", val);
         self.counter += 1;
 
-        sval 
+        sval
     }
 }

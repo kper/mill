@@ -1,18 +1,24 @@
 use crate::codegen::Codegen;
-use crate::symbol_table::{SymbolTable};
+use crate::symbol_table::SymbolTable;
 use crate::visitors::CheckIfFunctionCallExistsVisitor;
 use crate::visitors::CodegenVisitor;
+use anyhow::{anyhow, bail, Context, Result};
 use std::collections::HashSet;
 
 pub type IdTy = String;
-type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, PartialEq, Eq)]
+/*
+#[derive(Debug, Error)]
 pub enum Error {
+    #[error("The symbol `{0}` is already defined.")]
     SymbolAlreadyDefined(IdTy),
+    #[error("The symbol `{0}` is not defined.")]
     SymbolNotDefined(IdTy),
+    #[error("The function `{0}` is not defined.")]
     FunctionNotDefined(IdTy),
-}
+    #[error(transparent)]
+    Other(#[from] anyhow::Error)
+}*/
 
 #[derive(Debug)]
 pub struct Program {
@@ -104,7 +110,7 @@ impl Func {
                 Statement::Assign(id, _) => symbol_table.insert(id)?,
                 Statement::ReAssign(id, _) => {
                     if !symbol_table.lookup_symbol(&id) {
-                        return Err(Error::SymbolNotDefined(id.to_string()));
+                        bail!("Symbol {} is not defined", id);
                     }
                 }
                 _ => {}
@@ -253,7 +259,7 @@ impl CheckIfFunctionCallExistsVisitor for Term {
         match &*self {
             Term::Call(id, exprs) => {
                 if !symbol_table.lookup_symbol(&id) {
-                    return Err(Error::FunctionNotDefined(id.to_string()));
+                    bail!("Function {} is not defined", id);
                 }
 
                 for expr in exprs {
