@@ -6,7 +6,6 @@ use std::path::Path;
 
 use inkwell::builder::Builder;
 use inkwell::context::Context;
-use inkwell::execution_engine::ExecutionEngine;
 use inkwell::module::Module;
 use inkwell::targets::{InitializationConfig, Target};
 use inkwell::values::{BasicValue, BasicValueEnum};
@@ -45,12 +44,15 @@ impl<'ctx> Codegen<'ctx> {
 
         Ok(())
     }
+
+    pub fn get_IR(&self) -> String {
+        self.module.print_to_string().to_string()
+    }
 }
 
 impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
     fn visit_program(&mut self, program: &mut Program) -> Result<()> {
         for func in program.functions.iter_mut() {
-            //<Func as CodegenVisitor>::visit(&func, codegen, functions)?;
             self.visit_func(func)?;
         }
 

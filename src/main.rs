@@ -43,9 +43,12 @@ fn main() {
         panic!("{:?}", err);
     }
 
-    if let Err(err) = ast.codegen("main.bc") {
+    let codegen = ast.codegen();
+    if let Err(err) = codegen {
         panic!("{:?}", err);
     }
+
+    codegen.unwrap().write_bitcode("main.bc");
 }
 
 #[cfg(test)]
