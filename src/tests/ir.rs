@@ -1,5 +1,4 @@
 use crate::grammar;
-use crate::visitors::CheckIfFunctionCallExistsVisitor;
 use insta::assert_snapshot;
 
 fn init() {

@@ -29,7 +29,7 @@ impl SymbolTable {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct LLVMSymbolTable<'a> {
     symbols: HashMap<Key, BasicValueEnum<'a>>,
     counter: usize,

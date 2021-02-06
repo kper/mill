@@ -149,10 +149,15 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 let res = self.visit_expr(expr).map(|x| x.into_owned());
                 let ptr = self.symbol_table.get(id);
 
+                if res.is_none() {
+                    bail!("Evaluated expression is None");
+                }
+                if ptr.is_none() {
+                    bail!("Symbol {} not found", id);
+                }
+
                 if let (Some(val), Some(ptr)) = (res, ptr) {
                     let _instr = self.builder.build_store(ptr.into_pointer_value(), val);
-                } else {
-                    panic!("No value or ptr found");
                 }
             }
             Statement::Conditional(id, guards) => {
@@ -222,10 +227,11 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
 
             self.builder.position_at_end(then_block);
 
-            //TODO restore old symbols
+            let cpy_symbols = self.symbol_table.clone();
             for stmt in guard.statements.iter() {
                 self.visit_statement(stmt, function_id)?;
             }
+            self.symbol_table = cpy_symbols;
 
             match guard.continuation {
                 Continuation::Break(None) => {
@@ -255,9 +261,11 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
 
             self.builder.position_at_end(basic_block);
 
+            let cpy_symbols = self.symbol_table.clone();
             for stmt in guard.statements.iter() {
                 self.visit_statement(stmt, function_id)?;
             }
+            self.symbol_table = cpy_symbols;
 
             match guard.continuation {
                 Continuation::Break(None) => {
