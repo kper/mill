@@ -1,4 +1,4 @@
-# Mill [![Build Status](https://travis-ci.org/kper/mill.svg?branch=master)](https://travis-ci.org/kper/mill)
+# Mill
 
 Mill is a compiler based on LLVM-10.
 
