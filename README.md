@@ -1,6 +1,6 @@
-# 
+# Mill 
 
-xxx is a compiler based on LLVM-10.
+Mill is a compiler based on LLVM-10.
 
 ```
 greaterThan(a,b) 

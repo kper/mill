@@ -1,5 +1,5 @@
 [package]
-name = "wiegenfest"
+name = "mill"
 version = "0.1.0"
 authors = ["Kevin Per <kevin.per@protonmail.com>"]
 edition = "2018"
