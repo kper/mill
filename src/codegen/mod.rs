@@ -154,6 +154,23 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     panic!("No value found");
                 }
             }
+            Expr::Dual(Opcode::Geq, lhs, rhs) => {
+                let lhs = self.visit_term(lhs).map(|x| x.into_owned());
+                let rhs = self.visit_term(rhs).map(|x| x.into_owned());
+
+                if let (Some(lhs), Some(rhs)) = (lhs, rhs) {
+                    let eq = self.builder.build_int_compare(
+                        IntPredicate::SGE,
+                        lhs.into_int_value(),
+                        rhs.into_int_value(),
+                        &self.symbol_table.get_new_name(),
+                    );
+
+                    return Some(Cow::Owned(BasicValueEnum::IntValue(eq)));
+                } else {
+                    panic!("No value found");
+                }
+            }
             _ => return None,
         }
     }
