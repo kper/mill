@@ -2,8 +2,14 @@ use crate::grammar;
 use crate::visitors::CheckIfFunctionCallExistsVisitor;
 use insta::assert_snapshot;
 
+fn init() {
+    let _ = env_logger::builder().is_test(true).try_init();
+}
+
 macro_rules! compile {
     ($input:expr) => {
+        init();
+
         let input = $input;
 
         let mut program = grammar::ProgramParser::new().parse(&input).unwrap();

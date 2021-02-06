@@ -11,6 +11,8 @@ use inkwell::targets::{InitializationConfig, Target};
 use inkwell::values::{BasicValue, BasicValueEnum};
 use inkwell::IntPredicate;
 
+use log::debug;
+
 type Result<T> = std::result::Result<T, Error>;
 
 pub struct Codegen<'ctx> {
@@ -54,6 +56,8 @@ impl<'ctx> Codegen<'ctx> {
 
 impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
     fn visit_program(&mut self, program: &'ctx mut Program) -> Result<()> {
+        debug!("Visiting program");
+
         for func in program.functions.iter_mut() {
             let context = &self.context;
             let module = &self.module;
@@ -65,6 +69,11 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
             let function = module.add_function(&func.id, fn_type, None);
 
             self.function_table.insert(&func.id, function)?;
+
+            debug!(
+                "=> Saved function {}({:?}) into the function table",
+                func.id, func_types
+            );
         }
 
         for func in program.functions.iter_mut() {
@@ -75,6 +84,7 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
     }
 
     fn visit_func(&mut self, func: &'ctx mut Func) -> Result<()> {
+        debug!("Visiting func {}({:?})", func.id, func.pars);
         let context = &self.context;
         let builder = &self.builder;
 
@@ -93,6 +103,7 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
 
             self.symbol_table
                 .insert(param, BasicValueEnum::PointerValue(ptr))?;
+            debug!("Allocating functions parameter {}", param);
         }
 
         for stmt in func.statements.iter() {
@@ -105,14 +116,20 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
     }
 
     fn visit_statement(&mut self, stmt: &Statement) -> Result<()> {
+        debug!("Visiting statement");
+
         match stmt {
             Statement::Ret(expr) => {
+                debug!("Statement is a return statement");
+
                 let res = self.visit_expr(expr).map(|x| x.into_owned());
                 let ret: Option<&dyn BasicValue> = res.as_ref().map(|x| x as &dyn BasicValue);
 
                 self.builder.build_return(ret);
             }
             Statement::Assign(id, expr) => {
+                debug!("Statement is an assignment");
+
                 let res = self.visit_expr(expr).map(|x| x.into_owned());
 
                 if let Some(val) = res {
@@ -127,6 +144,8 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 }
             }
             Statement::ReAssign(id, expr) => {
+                debug!("Statement is a reassignment");
+
                 let res = self.visit_expr(expr).map(|x| x.into_owned());
                 let ptr = self.symbol_table.get(id);
 
@@ -143,14 +162,20 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
     }
 
     fn visit_expr(&mut self, expr: &Expr) -> Option<Cow<BasicValueEnum<'ctx>>> {
+        debug!("Visiting expr");
+
         match expr {
             Expr::Num(num) => {
+                debug!("=> is a number {}", num);
+
                 let i64_type = self.context.i64_type();
                 let obj = BasicValueEnum::IntValue(i64_type.const_int(*num as u64, false));
 
                 return Some(Cow::Owned(obj));
             }
             Expr::Id(id) => {
+                debug!("=> is an ident {}", id);
+
                 let var = self.symbol_table.get(id).map(|x| Cow::Borrowed(x));
                 if let Some(var) = var {
                     let ptr = var.into_pointer_value();
@@ -160,9 +185,13 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 }
             }
             Expr::Single(term) => {
+                debug!("=> is term");
+
                 return self.visit_term(term);
             }
             Expr::Unchained(Opcode::Not, term) => {
+                debug!("=> is term");
+
                 let res = self.visit_term(term).map(|x| x.into_owned());
 
                 if let Some(val) = res {
@@ -179,6 +208,8 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 panic!("Opcode not supported");
             }
             Expr::Dual(Opcode::Cmp, lhs, rhs) => {
+                debug!("=> has two operands for Comparison");
+
                 let lhs = self.visit_term(lhs).map(|x| x.into_owned());
                 let rhs = self.visit_term(rhs).map(|x| x.into_owned());
 
@@ -196,6 +227,8 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 }
             }
             Expr::Dual(Opcode::Geq, lhs, rhs) => {
+                debug!("=> has two operands for GEQ");
+
                 let lhs = self.visit_term(lhs).map(|x| x.into_owned());
                 let rhs = self.visit_term(rhs).map(|x| x.into_owned());
 
@@ -213,6 +246,8 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 }
             }
             Expr::Chained(op, lhs, rhs) => {
+                debug!("=> chained");
+
                 let lhs = self.visit_term(lhs).map(|x| x.into_owned());
                 let rhs = self.visit_expr(rhs).map(|x| x.into_owned());
 
@@ -246,14 +281,20 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
     }
 
     fn visit_term(&mut self, term: &Term) -> Option<Cow<BasicValueEnum<'ctx>>> {
+        debug!("Visit term");
+
         match term {
             Term::Num(num) => {
+                debug!("=> term is a number {}", num);
+
                 let i64_type = self.context.i64_type();
                 let obj = BasicValueEnum::IntValue(i64_type.const_int(*num as u64, false));
 
                 return Some(Cow::Owned(obj));
             }
             Term::Id(id) => {
+                debug!("=> term is an ident {}", id);
+
                 let var = self.symbol_table.get(id).map(|x| Cow::Borrowed(x));
                 if let Some(var) = var {
                     let ptr = var.into_pointer_value();
@@ -263,6 +304,8 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 }
             }
             Term::Call(id, pars) => {
+                debug!("=> term is a call {}({:?})", id, pars);
+
                 let arguments: Vec<_> = pars
                     .iter()
                     .map(|x| self.visit_expr(x).map(|x| x.into_owned()))
