@@ -101,13 +101,13 @@ fn parse_statements() {
 fn test_assign_errors() {
     assert_eq!(
         extract_user_error!(grammar::FuncdefParser::new()
-            .parse("fn x(a,b,c) { let k : i64 = 1; let k : i64 = 2; }")
+            .parse("fn x(a : i64, b: i64, c: i64) { let k : i64 = 1; let k : i64 = 2; }")
             .unwrap_err()),
         ("Symbol k is already defined")
     );
     assert_eq!(
         extract_user_error!(grammar::FuncdefParser::new()
-            .parse("fn x(a,b,c) { let k : i64 = 1; h = 2; }")
+            .parse("fn x(a : i64,b: i64,c: i64 ) { let k : i64 = 1; h = 2; }")
             .unwrap_err()),
         ("Symbol h is not defined")
     );
@@ -116,7 +116,7 @@ fn test_assign_errors() {
 #[test]
 fn parse_func() {
     assert!(grammar::FuncdefParser::new()
-        .parse("fn x(a,b,c) { return k; }")
+        .parse("fn x(a : i64 ,b : i64 ,c : i64) { return k; }")
         .is_ok());
 }
 
@@ -146,7 +146,7 @@ fn parse_cond() {
 #[test]
 fn parse_prog() {
     assert!(grammar::ProgramParser::new()
-        .parse("fn x(a,b,c) { return a; } fn test(a,b,c) { return b; }")
+        .parse("fn x(a: i64,b: i64,c: i64) { return a; } fn test(a: i64,b: i64,c: i64) { return b; }")
         .is_ok());
 }
 
@@ -163,7 +163,7 @@ fn parse_call() {
 #[test]
 fn test_function_defined_twice() {
     let parsed = grammar::ProgramParser::new()
-        .parse("fn x(a,b,c) { return k; } fn x(a,b,c) { return k; }")
+        .parse("fn x(a: i64,b: i64, c: i64) { return k; } fn x(a: i64,b: i64,c: i64) { return k; }")
         .unwrap();
     assert_eq!(
         true,
@@ -177,7 +177,7 @@ fn test_function_calls_when_defined() {
     use crate::visitors::CheckIfFunctionCallExistsVisitor;
 
     let parsed = grammar::ProgramParser::new()
-        .parse("fn x(a,b,c) { return k(a, b); } fn k(a, b) { return 1; }")
+        .parse("fn x(a: i64,b: i64,c: i64) { return k(a, b); } fn k(a: i64, b: i64) { return 1; }")
         .unwrap();
 
     let functions = parsed.get_function_names().unwrap();
@@ -194,7 +194,7 @@ fn parse_struct() {
 #[test]
 fn parse_struct_with_func() {
     assert!(grammar::ProgramParser::new()
-        .parse("struct test123 { } fn x(a,b,c) { return a; } fn test(a,b,c) { return b; }")
+        .parse("struct test123 { } fn x(a: i64,b: i64,c: i64) { return a; } fn test(a: i64,b: i64,c: i64) { return b; }")
         .is_ok());
 }
 

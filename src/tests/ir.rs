@@ -55,12 +55,12 @@ fn test_multiple_addition_with_vars() {
 
 #[test]
 fn test_call_when_names_in_order() {
-    compile!("fn f(a) { return a; } fn main() { let a : i64 = 1; return f(a); }");
+    compile!("fn f(a: i64) { return a; } fn main() { let a : i64 = 1; return f(a); }");
 }
 
 #[test]
 fn test_call_when_names_not_in_order() {
-    compile!("fn main() { let a : i64 = 1; return f(a); } fn f(a) { return a; }");
+    compile!("fn main() { let a : i64 = 1; return f(a); } fn f(a:i64) { return a; }");
 }
 
 #[test]

@@ -28,7 +28,13 @@ Vec<T>: Vec<T> = {
     <v:(<T>)*> => v
 };
 
-pub Pars = Comma<Id>;
+pub Pars  = Comma<Par>;
+
+Par : Identifier = {
+    <id:Id> ":" <dat:DataType> => {
+        id.update_ty(dat)
+    }
+};
 pub Program : Program = <decls:Vec<Decl>> => {
     Program {
         functions: decls.clone().into_iter()
