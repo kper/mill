@@ -14,11 +14,22 @@ pub struct Identifier {
     id: String,
     pos_l: usize,
     pos_r: usize,
+    ty: Option<DataType>,
 }
 
 impl Identifier {
-    pub fn new(id: String, pos_l: usize, pos_r: usize) -> Self {
-        Self { id, pos_l, pos_r }
+    pub fn new(id: String, pos_l: usize, pos_r: usize, ty: Option<DataType>) -> Self {
+        Self {
+            id,
+            pos_l,
+            pos_r,
+            ty,
+        }
+    }
+
+    pub fn update_ty(mut self, ty: DataType) -> Self {
+        self.ty = Some(ty);
+        self
     }
 
     pub fn get_name(&self) -> &String {
@@ -53,15 +64,12 @@ pub enum Decl {
 #[derive(Debug, Clone)]
 pub struct Struct {
     pub name: Identifier,
-    pub fields: Vec<Field>
+    pub fields: Vec<Field>,
 }
 
 impl Struct {
     pub fn new(name: Identifier, fields: Vec<Field>) -> Result<Self> {
-        Ok(Self {
-            name,
-            fields 
-        })
+        Ok(Self { name, fields })
     }
 }
 
@@ -73,10 +81,7 @@ pub struct Field {
 
 impl Field {
     pub fn new(name: Identifier, ty: DataType) -> Self {
-        Self {
-            name,
-            ty
-        }
+        Self { name, ty }
     }
 
     pub fn get_name(&self) -> &String {
@@ -84,11 +89,11 @@ impl Field {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DataType {
     I64,
     I32,
-    Struct(Identifier)
+    Struct(Box<Identifier>),
 }
 
 impl Program {

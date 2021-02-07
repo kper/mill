@@ -64,14 +64,16 @@ Field: Field = {
 DataType: DataType = {
     "i64" => DataType::I64,
     "i32" => DataType::I32,
-    <id:Id> => DataType::Struct(id)
+    <id:Id> => DataType::Struct(Box::new(id))
 }
 
 pub Statements = SemiComma<Statement>;
 
 pub Statement: Box<Statement> = {
 	"return" <e:Expr> => Box::new(Statement::Ret(e)),
-    "let" <id:Id> "=" <e:Expr> => Box::new(Statement::Assign(id, e)),
+    "let" <id:Id> ":" <dat:DataType> "=" <e:Expr> => {
+        Box::new(Statement::Assign(id.update_ty(dat), e))
+    },
     <id:Id> ":" <cond:Conditional> => Box::new(Statement::Conditional(Some(id), cond)),
     <cond:Conditional> => Box::new(Statement::Conditional(None, cond)),
     <cond:Conditional> <id:Id> ":" => Box::new(Statement::Conditional(Some(id), cond)),
@@ -135,5 +137,5 @@ pub Term: Box<Term> = {
 	<id:Id> "(" <exprs:Exprs> ")" => Box::new(Term::Call(id, exprs)),
 };
 
-pub Id: Identifier = <l:@L> <s:r"[a-zA-Z][a-zA-Z0-9]*"> <r:@R> => Identifier::new(s.to_string(), l, r);
+pub Id: Identifier = <l:@L> <s:r"[a-zA-Z][a-zA-Z0-9]*"> <r:@R> => Identifier::new(s.to_string(), l, r, None);
 Num: i64= <s:r"[0-9]+"> => i64::from_str(s).unwrap();

@@ -73,9 +73,9 @@ fn parse_statement() {
     assert!(grammar::StatementParser::new()
         .parse("return islist x")
         .is_ok());
-    assert!(grammar::StatementParser::new().parse("let x = x").is_ok());
+    assert!(grammar::StatementParser::new().parse("let x : i64 = x").is_ok());
     assert!(grammar::StatementParser::new()
-        .parse("let x = islist x")
+        .parse("let x : i64= islist x")
         .is_ok());
     assert!(grammar::StatementParser::new().parse("x = x").is_ok());
     assert!(grammar::StatementParser::new()
@@ -101,13 +101,13 @@ fn parse_statements() {
 fn test_assign_errors() {
     assert_eq!(
         extract_user_error!(grammar::FuncdefParser::new()
-            .parse("fn x(a,b,c) { let k = 1; let k = 2; }")
+            .parse("fn x(a,b,c) { let k : i64 = 1; let k : i64 = 2; }")
             .unwrap_err()),
         ("Symbol k is already defined")
     );
     assert_eq!(
         extract_user_error!(grammar::FuncdefParser::new()
-            .parse("fn x(a,b,c) { let k = 1; h = 2; }")
+            .parse("fn x(a,b,c) { let k : i64 = 1; h = 2; }")
             .unwrap_err()),
         ("Symbol h is not defined")
     );
