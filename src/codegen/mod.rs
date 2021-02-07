@@ -62,7 +62,7 @@ impl<'ctx> Codegen<'ctx> {
                 return Ok(BasicTypeEnum::IntType(self.context.i64_type()));
             }
             DataType::Struct(id) => {
-                let ty = self
+                let (_, ty) = self
                     .struct_table
                     .get(id.get_name())
                     .ok_or_else(|| (anyhow!("Cannot find struct")))?;
@@ -126,8 +126,10 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
 
             let _instr = self.builder.build_store(ptr, value);
 
-            self.symbol_table
-                .insert(param.get_name(), BasicValueEnum::PointerValue(ptr))?;
+            self.symbol_table.insert(
+                param.get_name(),
+                (param.clone(), BasicValueEnum::PointerValue(ptr)),
+            )?;
             debug!("Allocating functions parameter {}", param);
         }
 
@@ -162,8 +164,10 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     let ptr = self.builder.build_alloca(i64_type, id.get_name());
 
                     let _instr = self.builder.build_store(ptr, val);
-                    self.symbol_table
-                        .insert(id.get_name(), BasicValueEnum::PointerValue(ptr))?;
+                    self.symbol_table.insert(
+                        id.get_name(),
+                        (id.clone(), BasicValueEnum::PointerValue(ptr)),
+                    )?;
                 } else {
                     panic!("No value found");
                 }
@@ -171,14 +175,16 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
             Statement::Allocate(symbol, alloc_struct) => {
                 debug!("Statement is an allocation");
 
-                let ty = self.struct_table.get(alloc_struct.get_name()).unwrap();
+                let (_, ty) = self.struct_table.get(alloc_struct.get_name()).unwrap();
                 let ptr = self
                     .builder
                     .build_alloca(BasicTypeEnum::StructType(*ty), symbol.get_name());
 
                 //let _instr = self.builder.build_store(ptr, val);
-                self.symbol_table
-                    .insert(symbol.get_name(), BasicValueEnum::PointerValue(ptr))?;
+                self.symbol_table.insert(
+                    symbol.get_name(),
+                    (symbol.clone(), BasicValueEnum::PointerValue(ptr)),
+                )?;
             }
             Statement::ReAssign(id, ref mut expr) => {
                 debug!("Statement is a reassignment");
@@ -485,6 +491,30 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     panic!("No entry in symbol table");
                 }
             }
+            Term::Object(symbol, field) => {
+                debug!("=> term is a field access {}", field);
+
+                let sym_ref = self.symbol_table.get_both(symbol.get_name());
+
+                if let Some((symbol, llvm_sym)) = sym_ref {
+                    if let Some(DataType::Struct(ty)) = &symbol.ty {
+                        let (my_struct, _llvm_struct) =
+                            self.struct_table.get(ty.get_name()).unwrap();
+                        let index = my_struct.get_id_by_field_name(field.get_name()).unwrap();
+
+                        let ptr = llvm_sym.into_pointer_value();
+                        return Some(Cow::Owned(BasicValueEnum::PointerValue(
+                            self.builder
+                                .build_struct_gep(ptr, index as u32, field.get_name())
+                                .unwrap(),
+                        )));
+                    } else {
+                        panic!("Identfier has wrong type");
+                    }
+                } else {
+                    panic!("Symbol not found");
+                }
+            }
             Term::Call(id, ref mut pars) => {
                 debug!("=> term is a call {}({:?})", id, pars);
 
@@ -525,18 +555,25 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     field_types.push(BasicTypeEnum::IntType(i64_ty));
                 }
                 DataType::Struct(ty) => {
-                    let struct_ty = self.struct_table.get(ty.get_name()).unwrap();
+                    let (_, struct_ty) = self.struct_table.get(ty.get_name()).unwrap();
 
                     field_types.push(BasicTypeEnum::StructType(*struct_ty));
                 }
             }
         }
 
+        use inkwell::AddressSpace;
+
         let struct_ty = self.context.struct_type(field_types.as_slice(), false);
+        /*let struct_ptr_ty = struct_ty.ptr_type(AddressSpace::Generic);
+
+        for (i, field) in mystruct.fields.iter().enumerate() {
+            self.builder.build_struct_gep(struct_ptr_ty, i, field);
+        }*/
 
         //TODO allow recursive datatypes
         self.struct_table
-            .insert(mystruct.name.get_name(), struct_ty)?;
+            .insert(mystruct.name.get_name(), (mystruct.clone(), struct_ty))?;
 
         Ok(())
     }

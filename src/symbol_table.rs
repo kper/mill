@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use crate::ast::{Identifier, Struct};
 use anyhow::{bail, Result};
 use inkwell::basic_block::BasicBlock;
 use inkwell::types::StructType;
@@ -31,7 +32,7 @@ impl SymbolTable {
 
 #[derive(Debug, Default, Clone)]
 pub struct LLVMSymbolTable<'a> {
-    symbols: HashMap<Key, BasicValueEnum<'a>>,
+    symbols: HashMap<Key, (Identifier, BasicValueEnum<'a>)>,
     counter: usize,
 }
 
@@ -41,10 +42,18 @@ impl<'a> LLVMSymbolTable<'a> {
     }
 
     pub fn get(&self, sym: &Key) -> Option<&BasicValueEnum<'a>> {
+        self.symbols.get(sym).as_ref().map(|x| &x.1)
+    }
+
+    pub fn get_identifier(&self, sym: &Key) -> Option<&Identifier> {
+        self.symbols.get(sym).as_ref().map(|x| &x.0)
+    }
+
+    pub fn get_both(&self, sym: &Key) -> Option<&(Identifier, BasicValueEnum<'a>)> {
         self.symbols.get(sym)
     }
 
-    pub fn insert(&mut self, sym: &Key, val: BasicValueEnum<'a>) -> Result<()> {
+    pub fn insert(&mut self, sym: &Key, val: (Identifier, BasicValueEnum<'a>)) -> Result<()> {
         if !self.lookup_symbol(sym) {
             self.symbols.insert(sym.clone(), val);
             Ok(())
@@ -142,7 +151,7 @@ impl<'a> LLVMBlockTable<'a> {
 
 #[derive(Debug, Default)]
 pub struct LLVMStructTable<'a> {
-    symbols: HashMap<Key, StructType<'a>>,
+    symbols: HashMap<Key, (Struct, StructType<'a>)>,
     counter: usize,
 }
 
@@ -151,11 +160,11 @@ impl<'a> LLVMStructTable<'a> {
         self.symbols.contains_key(sym)
     }
 
-    pub fn get(&self, sym: &Key) -> Option<&StructType<'a>> {
+    pub fn get(&self, sym: &Key) -> Option<&(Struct, StructType<'a>)> {
         self.symbols.get(sym)
     }
 
-    pub fn insert(&mut self, sym: &Key, val: StructType<'a>) -> Result<()> {
+    pub fn insert(&mut self, sym: &Key, val: (Struct, StructType<'a>)) -> Result<()> {
         if !self.lookup_symbol(sym) {
             self.symbols.insert(sym.clone(), val);
             Ok(())

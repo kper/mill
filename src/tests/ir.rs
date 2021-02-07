@@ -82,3 +82,8 @@ fn test_struct() {
 fn test_alloc_struct() {
     compile!("struct test { a: int, b: int } fn main() { let a = new test; }");
 }
+
+#[test]
+fn test_field_access() {
+    compile!("struct t { a: int, b: int } fn main() { let o = new t; let k : int = o.a; return k; }");
+}

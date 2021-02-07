@@ -1,0 +1,18 @@
+---
+source: src/tests/ir.rs
+expression: ir
+
+---
+; ModuleID = 'main'
+source_filename = "main"
+
+define i64 @main() {
+main:
+  %o = alloca { i64, i64 }
+  %a = getelementptr inbounds { i64, i64 }, { i64, i64 }* %o, i32 0, i32 0
+  %k = alloca i64
+  store i64* %a, i64* %k
+  %k1 = load i64, i64* %k
+  ret i64 %k1
+}
+

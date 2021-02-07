@@ -9,7 +9,7 @@ use std::hash::{Hash, Hasher};
 
 pub type IdTy = Identifier;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Identifier {
     id: String,
     pos_l: usize,
@@ -61,7 +61,7 @@ pub enum Decl {
     Struct(Struct),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq)]
 pub struct Struct {
     pub name: Identifier,
     pub fields: Vec<Field>,
@@ -71,9 +71,21 @@ impl Struct {
     pub fn new(name: Identifier, fields: Vec<Field>) -> Result<Self> {
         Ok(Self { name, fields })
     }
+
+    /// Given the field name, return the index of
+    /// the field in the struct.
+    pub fn get_id_by_field_name(&self, field: &String) -> Result<usize> {
+        for (i, f) in self.fields.iter().enumerate() {
+            if f.get_name() == field {
+                return Ok(i);
+            }
+        }
+
+        bail!("Field {} was not found", field);
+    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq)]
 pub struct Field {
     name: Identifier,
     pub ty: DataType,
@@ -89,7 +101,7 @@ impl Field {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum DataType {
     Int,
     Struct(Box<Identifier>),
@@ -232,9 +244,7 @@ impl CheckIfFunctionCallExistsVisitor for Statement {
                     <Guard as CheckIfFunctionCallExistsVisitor>::visit(&guard, symbol_table)?;
                 }
             }
-            Statement::Allocate(_, _) => {
-
-            }
+            Statement::Allocate(_, _) => {}
         }
 
         Ok(true)
@@ -317,7 +327,6 @@ pub enum Opcode {
     Tail,
     IsList,
     Or,
-    Dot,
     Geq,
     Cmp,
 }
@@ -326,6 +335,7 @@ pub enum Opcode {
 pub enum Term {
     Num(i64),
     Id(IdTy),
+    Object(IdTy, IdTy),
     Call(IdTy, Vec<Box<Expr>>),
 }
 

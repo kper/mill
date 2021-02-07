@@ -83,7 +83,8 @@ pub Statement: Box<Statement> = {
     <cond:Conditional> => Box::new(Statement::Conditional(None, cond)),
     <cond:Conditional> <id:Id> ":" => Box::new(Statement::Conditional(Some(id), cond)),
 	<id:Id> "=" <e:Expr> => Box::new(Statement::ReAssign(id, e)),
-	"let" <id:Id> "=" "new" <st:Id> => Box::new(Statement::Allocate(id, st))
+	"let" <id:Id> "=" "new" <st:Id> =>
+        Box::new(Statement::Allocate(id.update_ty(DataType::Struct(Box::new(st.clone()))), st))
 };
 
 pub Conditional: Vec<Box<Guard>> = {
@@ -132,13 +133,13 @@ Exprs: Vec<Box<Expr>> = Comma<Expr>;
 ExprOp: Opcode = {
 	"+" => Opcode::Add,
 	"-" => Opcode::Sub,
-	"or" => Opcode::Or,
-	"." => Opcode::Dot,
+	"or" => Opcode::Or
 };
 
 pub Term: Box<Term> = {
 	Num => Box::new(Term::Num(<>)),
 	Id => Box::new(Term::Id(<>)),
+	<obj:Id> "." <field:Id> => Box::new(Term::Object(obj, field)),
 	"(" <n:Term> ")" => n,
 	<id:Id> "(" <exprs:Exprs> ")" => Box::new(Term::Call(id, exprs)),
 };
