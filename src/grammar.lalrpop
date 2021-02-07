@@ -24,12 +24,16 @@ SemiComma<T>: Vec<T> = {
     <v:(<T> ";")*> => v
 };
 
+Vec<T>: Vec<T> = {
+    <v:(<T>)*> => v
+};
+
 pub Pars = Comma<Id>;
-pub Program : Program = <funcs:SemiComma<Funcdef>> => Program {
+pub Program : Program = <funcs:Vec<Funcdef>> => Program {
     functions: funcs
 };
 pub Funcdef : Func = {
-	<id:Id> "(" <pars:Pars> ")" <statements:Statements> "end" =>? Func::new(id, pars, statements).map_err(|w| ParseError::User {
+	"fn" <id:Id> "(" <pars:Pars> ")" "{" <statements:Statements> "}" =>? Func::new(id, pars, statements).map_err(|w| ParseError::User {
         error: w
     })
 };
@@ -38,7 +42,7 @@ pub Statements = SemiComma<Statement>;
 
 pub Statement: Box<Statement> = {
 	"return" <e:Expr> => Box::new(Statement::Ret(e)),
-    "var" <id:Id> "=" <e:Expr> => Box::new(Statement::Assign(id, e)),
+    "let" <id:Id> "=" <e:Expr> => Box::new(Statement::Assign(id, e)),
     <id:Id> ":" <cond:Conditional> => Box::new(Statement::Conditional(Some(id), cond)),
     <cond:Conditional> => Box::new(Statement::Conditional(None, cond)),
     <cond:Conditional> <id:Id> ":" => Box::new(Statement::Conditional(Some(id), cond)),
@@ -46,12 +50,17 @@ pub Statement: Box<Statement> = {
 };
 
 pub Conditional: Vec<Box<Guard>> = {
-    "cond" <guards:SemiComma<Guard>> "end" => guards
+    "match" <guards:SemiComma<Guard>> "end" => guards
 };
 
 pub Guard: Box<Guard> = {
-    <e:Expr?> "->" <stats:Statements> <cont:Continuation> => Box::new(Guard {
-        guard: e,
+    <e:Expr> "->" <stats:Statements> <cont:Continuation> => Box::new(Guard {
+        guard: Some(e),
+        statements: stats,
+        continuation: cont,
+    }),
+    "_" "->" <stats:Statements> <cont:Continuation> => Box::new(Guard {
+        guard: None,
         statements: stats,
         continuation: cont,
     })

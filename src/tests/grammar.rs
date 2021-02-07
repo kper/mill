@@ -73,16 +73,16 @@ fn parse_statement() {
     assert!(grammar::StatementParser::new()
         .parse("return islist x")
         .is_ok());
-    assert!(grammar::StatementParser::new().parse("var x = x").is_ok());
+    assert!(grammar::StatementParser::new().parse("let x = x").is_ok());
     assert!(grammar::StatementParser::new()
-        .parse("var x = islist x")
+        .parse("let x = islist x")
         .is_ok());
     assert!(grammar::StatementParser::new().parse("x = x").is_ok());
     assert!(grammar::StatementParser::new()
         .parse("x = islist x")
         .is_ok());
     assert!(grammar::StatementParser::new()
-        .parse("id: cond -> return not a; break; -> return not a; break; end")
+        .parse("id: match _ -> return not a; break; _ -> return not a; break; end")
         .is_ok());
 }
 
@@ -94,20 +94,20 @@ fn parse_statements() {
     assert!(grammar::StatementsParser::new()
         .parse("return not 1 return not 1;")
         .is_err());
-    assert!(grammar::StatementsParser::new().parse("id: cond -> return not a; break; -> return not a; break; end; cond -> return not a; continue a; end;").is_ok());
+    assert!(grammar::StatementsParser::new().parse("id: match _ -> return not a; break; _ -> return not a; break; end; match _ -> return not a; continue a; end;").is_ok());
 }
 
 #[test]
 fn test_assign_errors() {
     assert_eq!(
         extract_user_error!(grammar::FuncdefParser::new()
-            .parse("x(a,b,c) var k = 1; var k = 2; end")
+            .parse("fn x(a,b,c) { let k = 1; let k = 2; }")
             .unwrap_err()),
         ("Symbol k is already defined")
     );
     assert_eq!(
         extract_user_error!(grammar::FuncdefParser::new()
-            .parse("x(a,b,c) var k = 1; h = 2; end")
+            .parse("fn x(a,b,c) { let k = 1; h = 2; }")
             .unwrap_err()),
         ("Symbol h is not defined")
     );
@@ -116,17 +116,17 @@ fn test_assign_errors() {
 #[test]
 fn parse_func() {
     assert!(grammar::FuncdefParser::new()
-        .parse("x(a,b,c) return k; end")
+        .parse("fn x(a,b,c) { return k; }")
         .is_ok());
 }
 
 #[test]
 fn parse_guard() {
     assert!(grammar::GuardParser::new()
-        .parse("-> return not a; break")
+        .parse("_ -> return not a; break")
         .is_ok());
     assert!(grammar::GuardParser::new()
-        .parse("-> return not a; break a")
+        .parse("_ -> return not a; break a")
         .is_ok());
     assert!(grammar::GuardParser::new()
         .parse("not b -> return not a; break")
@@ -139,14 +139,14 @@ fn parse_guard() {
 #[test]
 fn parse_cond() {
     assert!(grammar::ConditionalParser::new()
-        .parse("cond -> return not a; break; -> return not a; break; end")
+        .parse("match _ -> return not a; break; _ -> return not a; break; end")
         .is_ok());
 }
 
 #[test]
 fn parse_prog() {
     assert!(grammar::ProgramParser::new()
-        .parse("x(a,b,c) return k; end; x(a,b,c) return k; end;")
+        .parse("fn x(a,b,c) { return a; } fn test(a,b,c) { return b; }")
         .is_ok());
 }
 
@@ -163,7 +163,7 @@ fn parse_call() {
 #[test]
 fn test_function_defined_twice() {
     let parsed = grammar::ProgramParser::new()
-        .parse("x(a,b,c) return k; end; x(a,b,c) return k; end;")
+        .parse("fn x(a,b,c) { return k; } fn x(a,b,c) { return k; }")
         .unwrap();
     assert_eq!(
         true,
@@ -193,7 +193,7 @@ fn test_function_calls_when_defined() {
     use crate::visitors::CheckIfFunctionCallExistsVisitor;
 
     let parsed = grammar::ProgramParser::new()
-        .parse("x(a,b,c) return k(a, b); end; k(a, b) return 1; end;")
+        .parse("fn x(a,b,c) { return k(a, b); } fn k(a, b) { return 1; }")
         .unwrap();
 
     let functions = parsed.get_function_names().unwrap();

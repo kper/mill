@@ -1,5 +1,6 @@
 use crate::grammar;
 use insta::assert_snapshot;
+use crate::visitors::CheckIfFunctionCallExistsVisitor;
 
 fn init() {
     let _ = env_logger::builder().is_test(true).try_init();
@@ -24,50 +25,50 @@ macro_rules! compile {
 
 #[test]
 fn test_return() {
-    compile!("main() return 1; end;");
+    compile!("fn main() { return 1; }");
 }
 
 #[test]
 fn test_assignment() {
-    compile!("main() var a = 1; var b = 2; end;");
+    compile!("fn main() { let a = 1; let b = 2; }");
 }
 
 #[test]
 fn test_reassignment() {
-    compile!("main() var a = 1; a = 2; end;");
+    compile!("fn main() { let a = 1; a = 2; }");
 }
 
 #[test]
 fn test_addition() {
-    compile!("main() return 1 + 2; end;");
+    compile!("fn main() { return 1 + 2; }");
 }
 
 #[test]
 fn test_multiple_addition() {
-    compile!("main() return 1 + 2 + 3; end;");
+    compile!("fn main() { return 1 + 2 + 3; }");
 }
 
 #[test]
 fn test_multiple_addition_with_vars() {
-    compile!("main() var a = 1; var b = 2; var c = 3; return a + b + c; end;");
+    compile!("fn main() { let a = 1; let b = 2; let c = 3; return a + b + c; }");
 }
 
 #[test]
 fn test_call_when_names_in_order() {
-    compile!("f(a) return a; end; main() var a = 1; return f(a); end;");
+    compile!("fn f(a) { return a; } fn main() { let a = 1; return f(a); }");
 }
 
 #[test]
 fn test_call_when_names_not_in_order() {
-    compile!("main() var a = 1; return f(a); end; f(a) return a; end;");
+    compile!("fn main() { let a = 1; return f(a); } fn f(a) { return a; }");
 }
 
 #[test]
 fn test_one_guard_with_expr() {
-    compile!("main() cond 1 -> return 2; break; end; end;");
+    compile!("fn main() { match 1 -> return 2; break; end; }");
 }
 
 #[test]
 fn test_mixed_guards() {
-    compile!("main() cond 1 -> var a = 2; break; -> return 3; break; end; end;");
+    compile!("fn main() { match 1 -> let a = 2; break; _ -> return 3; break; end; }");
 }

@@ -3,18 +3,18 @@
 Mill is a compiler based on LLVM-10.
 
 ```
-greaterThan(a,b) 
- cond 
-  a >= b  -> return a; break; 
-          -> return b; break; 
- end;
-end;
+fn greaterThan(a,b) {
+  match
+        a >= b  -> return a; break; 
+        _       -> return b; break; 
+  end;
+}
 
-main() 
- var a = 10;
- var b = 5;
+fn main() {
+ let a = 10;
+ let b = 5;
  return greaterThan(a,b);
-end;
+}
 ```
 
 it supports ...
