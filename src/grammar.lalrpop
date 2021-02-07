@@ -68,8 +68,7 @@ Field: Field = {
 };
 
 DataType: DataType = {
-    "i64" => DataType::I64,
-    "i32" => DataType::I32,
+    "int" => DataType::Int,
     <id:Id> => DataType::Struct(Box::new(id))
 }
 

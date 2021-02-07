@@ -91,8 +91,7 @@ impl Field {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DataType {
-    I64,
-    I32,
+    Int,
     Struct(Box<Identifier>),
 }
 

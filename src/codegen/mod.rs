@@ -460,6 +460,8 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     .map(|x| x.unwrap())
                     .collect();
 
+                //TODO check types
+
                 if let Some(func_ref) = self.function_table.get(id.get_name()) {
                     return Some(Cow::Owned(
                         self.builder
@@ -479,17 +481,12 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
         debug!("Visit struct");
 
         let i64_ty = self.context.i64_type();
-        let i32_ty = self.context.i64_type();
 
         let mut field_types : Vec<BasicTypeEnum> = Vec::new();
 
         for (_i, field) in mystruct.fields.iter().enumerate() {
             match &field.ty {
-                DataType::I32 => {
-                    debug!("Struct {} has i32 field", mystruct.name.get_name());
-                    field_types.push(BasicTypeEnum::IntType(i32_ty));
-                }
-                DataType::I64 => {
+                DataType::Int => {
                     debug!("Struct {} has i64 field", mystruct.name.get_name());
                     field_types.push(BasicTypeEnum::IntType(i64_ty));
                 }

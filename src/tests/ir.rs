@@ -30,12 +30,12 @@ fn test_return() {
 
 #[test]
 fn test_assignment() {
-    compile!("fn main() { let a : i64 = 1; let b : i64 = 2; }");
+    compile!("fn main() { let a : int = 1; let b : int = 2; }");
 }
 
 #[test]
 fn test_reassignment() {
-    compile!("fn main() { let a : i64 = 1; a  = 2; }");
+    compile!("fn main() { let a : int = 1; a  = 2; }");
 }
 
 #[test]
@@ -50,17 +50,17 @@ fn test_multiple_addition() {
 
 #[test]
 fn test_multiple_addition_with_vars() {
-    compile!("fn main() { let a : i64 = 1; let b : i64 = 2; let c : i64 = 3; return a + b + c; }");
+    compile!("fn main() { let a : int = 1; let b : int = 2; let c : int = 3; return a + b + c; }");
 }
 
 #[test]
 fn test_call_when_names_in_order() {
-    compile!("fn f(a: i64) { return a; } fn main() { let a : i64 = 1; return f(a); }");
+    compile!("fn f(a: int) { return a; } fn main() { let a : int = 1; return f(a); }");
 }
 
 #[test]
 fn test_call_when_names_not_in_order() {
-    compile!("fn main() { let a : i64 = 1; return f(a); } fn f(a:i64) { return a; }");
+    compile!("fn main() { let a : int = 1; return f(a); } fn f(a:int) { return a; }");
 }
 
 #[test]
@@ -70,10 +70,10 @@ fn test_one_guard_with_expr() {
 
 #[test]
 fn test_mixed_guards() {
-    compile!("fn main() { match 1 -> let a : i64 = 2; break; _ -> return 3; break; end; }");
+    compile!("fn main() { match 1 -> let a : int = 2; break; _ -> return 3; break; end; }");
 }
 
 #[test]
 fn test_struct() {
-    compile!("struct test { a: i64 }");
+    compile!("struct test { a: int }");
 }
