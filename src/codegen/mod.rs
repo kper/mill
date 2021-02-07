@@ -21,6 +21,7 @@ pub struct Codegen<'ctx> {
     symbol_table: LLVMSymbolTable<'ctx>,
     function_table: LLVMFunctionTable<'ctx>,
     block_table: LLVMBlockTable<'ctx>,
+    struct_table: LLVMStructTable<'ctx>,
 }
 
 impl<'ctx> Codegen<'ctx> {
@@ -38,6 +39,7 @@ impl<'ctx> Codegen<'ctx> {
             symbol_table: LLVMSymbolTable::default(),
             function_table: LLVMFunctionTable::default(),
             block_table: LLVMBlockTable::default(),
+            struct_table: LLVMStructTable::default(),
         }
     }
 
@@ -74,6 +76,13 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 "=> Saved function {}({:?}) into the function table",
                 func.id, func_types
             );
+        }
+        
+        // TODO check for structs
+        // TODO check fields for structs
+
+        for mystruct in program.structs.iter_mut() {
+            self.visit_struct(mystruct)?;
         }
 
         for func in program.functions.iter_mut() {
@@ -454,5 +463,27 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 }
             }
         }
+    }
+
+    fn visit_struct(&mut self, mystruct: &Struct) -> Result<()> {
+        debug!("Visit struct");
+
+        use inkwell::AddressSpace;
+
+        let i64_ty = self.context.i64_type();
+        let i64_ptr_ty = i64_ty.ptr_type(AddressSpace::Generic);
+
+        let field_types = vec![i64_ty.into(); mystruct.fields.len() as usize];
+        let struct_ty = self.context.struct_type(&field_types, false);
+        let struct_ptr_ty = struct_ty.ptr_type(AddressSpace::Generic);
+
+        self.struct_table.insert(mystruct.name.get_name(), struct_ptr_ty)?;
+
+        /*
+        for (i, field) in mystruct.fields.iter().enumerate() {
+            self.builder.build_struct_gep(struct_ty, i as u32, field.get_name());
+        }*/
+
+        Ok(())
     }
 }

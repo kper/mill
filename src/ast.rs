@@ -52,8 +52,8 @@ pub enum Decl {
 
 #[derive(Debug, Clone)]
 pub struct Struct {
-    name: Identifier,
-    fields: Vec<Field>
+    pub name: Identifier,
+    pub fields: Vec<Field>
 }
 
 impl Struct {
@@ -77,6 +77,10 @@ impl Field {
             name,
             ty
         }
+    }
+
+    pub fn get_name(&self) -> &String {
+        &self.name.get_name()
     }
 }
 

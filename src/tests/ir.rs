@@ -72,3 +72,8 @@ fn test_one_guard_with_expr() {
 fn test_mixed_guards() {
     compile!("fn main() { match 1 -> let a = 2; break; _ -> return 3; break; end; }");
 }
+
+#[test]
+fn test_struct() {
+    compile!("struct test { a: i64 }");
+}

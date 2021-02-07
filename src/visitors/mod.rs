@@ -19,4 +19,5 @@ pub trait CodegenVisitor<'ctx> {
     fn visit_guard(&mut self, label: &Option<IdTy>, guard: &Guard, function: &IdTy) -> Result<()>;
     fn visit_expr(&mut self, expr: &Expr) -> Option<Cow<BasicValueEnum<'ctx>>>;
     fn visit_term(&mut self, term: &Term) -> Option<Cow<BasicValueEnum<'ctx>>>;
+    fn visit_struct(&mut self, mystruct: &Struct) -> Result<()>;
 }
