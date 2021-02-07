@@ -53,14 +53,36 @@ pub enum Decl {
 #[derive(Debug, Clone)]
 pub struct Struct {
     name: Identifier,
+    fields: Vec<Field>
 }
 
 impl Struct {
-    pub fn new(name: Identifier) -> Result<Self> {
+    pub fn new(name: Identifier, fields: Vec<Field>) -> Result<Self> {
         Ok(Self {
-            name 
+            name,
+            fields 
         })
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct Field {
+    name: Identifier,
+    ty: DataType,
+}
+
+impl Field {
+    pub fn new(name: Identifier, ty: DataType) -> Self {
+        Self {
+            name,
+            ty
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum DataType {
+    I64,
 }
 
 impl Program {

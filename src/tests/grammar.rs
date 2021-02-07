@@ -197,3 +197,14 @@ fn parse_struct_with_func() {
         .parse("struct test123 { } fn x(a,b,c) { return a; } fn test(a,b,c) { return b; }")
         .is_ok());
 }
+
+#[test]
+fn parse_struct_with_fields() {
+    assert!(grammar::ProgramParser::new()
+        .parse("struct test123 { test: i64, }")
+        .is_ok());
+    assert!(grammar::ProgramParser::new()
+        .parse("struct test123 { test: i64 }")
+        .is_ok());
+
+}

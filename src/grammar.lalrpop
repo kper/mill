@@ -52,9 +52,13 @@ pub Funcdef : Func = {
 };
 
 pub Struct : Struct = {
-    "struct" <id:Id> "{" "}" =>? Struct::new(id).map_err(|w| ParseError::User {
+    "struct" <id:Id> "{" <fields:Vec<Field>> "}" =>? Struct::new(id, fields).map_err(|w| ParseError::User {
         error: w
     })
+};
+
+Field: Field = {
+    <id:Id> ":" "i64" <t: ","?> => Field::new(id, DataType::I64)
 };
 
 pub Statements = SemiComma<Statement>;
