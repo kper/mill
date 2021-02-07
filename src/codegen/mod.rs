@@ -9,6 +9,7 @@ use inkwell::builder::Builder;
 use inkwell::context::Context as LLVM_Context;
 use inkwell::module::Module;
 use inkwell::targets::{InitializationConfig, Target};
+use inkwell::types::BasicTypeEnum;
 use inkwell::values::{BasicValue, BasicValueEnum};
 use inkwell::IntPredicate;
 use log::debug;
@@ -77,7 +78,6 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 func.id, func_types
             );
         }
-        
         // TODO check for structs
         // TODO check fields for structs
 
@@ -250,12 +250,14 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     self.builder.build_unconditional_branch(cond_block);
                 }
                 Continuation::Break(Some(ref label)) => {
-                    self.builder
-                        .build_unconditional_branch(self.block_table.get(label.get_name()).unwrap().1);
+                    self.builder.build_unconditional_branch(
+                        self.block_table.get(label.get_name()).unwrap().1,
+                    );
                 }
                 Continuation::Continue(Some(ref label)) => {
-                    self.builder
-                        .build_unconditional_branch(self.block_table.get(label.get_name()).unwrap().0);
+                    self.builder.build_unconditional_branch(
+                        self.block_table.get(label.get_name()).unwrap().0,
+                    );
                 }
             }
 
@@ -284,12 +286,14 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     self.builder.build_unconditional_branch(cond_block);
                 }
                 Continuation::Break(Some(ref label)) => {
-                    self.builder
-                        .build_unconditional_branch(self.block_table.get(label.get_name()).unwrap().1);
+                    self.builder.build_unconditional_branch(
+                        self.block_table.get(label.get_name()).unwrap().1,
+                    );
                 }
                 Continuation::Continue(Some(ref label)) => {
-                    self.builder
-                        .build_unconditional_branch(self.block_table.get(label.get_name()).unwrap().0);
+                    self.builder.build_unconditional_branch(
+                        self.block_table.get(label.get_name()).unwrap().0,
+                    );
                 }
             }
         }
@@ -314,7 +318,10 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
             Expr::Id(id) => {
                 debug!("=> is an ident {}", id);
 
-                let var = self.symbol_table.get(id.get_name()).map(|x| Cow::Borrowed(x));
+                let var = self
+                    .symbol_table
+                    .get(id.get_name())
+                    .map(|x| Cow::Borrowed(x));
                 if let Some(var) = var {
                     let ptr = var.into_pointer_value();
                     return Some(Cow::Owned(self.builder.build_load(ptr, id.get_name())));
@@ -433,7 +440,10 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
             Term::Id(id) => {
                 debug!("=> term is an ident {}", id);
 
-                let var = self.symbol_table.get(id.get_name()).map(|x| Cow::Borrowed(x));
+                let var = self
+                    .symbol_table
+                    .get(id.get_name())
+                    .map(|x| Cow::Borrowed(x));
                 if let Some(var) = var {
                     let ptr = var.into_pointer_value();
                     return Some(Cow::Owned(self.builder.build_load(ptr, id.get_name())));
@@ -468,19 +478,36 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
     fn visit_struct(&mut self, mystruct: &Struct) -> Result<()> {
         debug!("Visit struct");
 
-        use inkwell::AddressSpace;
-
         let i64_ty = self.context.i64_type();
-        let i64_ptr_ty = i64_ty.ptr_type(AddressSpace::Generic);
+        let i32_ty = self.context.i64_type();
 
-        let field_types = vec![i64_ty.into(); mystruct.fields.len() as usize];
-        let struct_ty = self.context.struct_type(&field_types, false);
-        let struct_ptr_ty = struct_ty.ptr_type(AddressSpace::Generic);
+        let mut field_types : Vec<BasicTypeEnum> = Vec::new();
 
-        self.struct_table.insert(mystruct.name.get_name(), struct_ptr_ty)?;
+        for (_i, field) in mystruct.fields.iter().enumerate() {
+            match &field.ty {
+                DataType::I32 => {
+                    debug!("Struct {} has i32 field", mystruct.name.get_name());
+                    field_types.push(BasicTypeEnum::IntType(i32_ty));
+                }
+                DataType::I64 => {
+                    debug!("Struct {} has i64 field", mystruct.name.get_name());
+                    field_types.push(BasicTypeEnum::IntType(i64_ty));
+                }
+                DataType::Struct(ty) => {
+                    let struct_ty = self.struct_table.get(ty.get_name()).unwrap();
+
+                    field_types.push(BasicTypeEnum::StructType(*struct_ty));
+                }
+            }
+        }
+
+        let struct_ty = self.context.struct_type(field_types.as_slice(), false);
+
+        //TODO allow recursive datatypes
+        self.struct_table
+            .insert(mystruct.name.get_name(), struct_ty)?;
 
         /*
-        for (i, field) in mystruct.fields.iter().enumerate() {
             self.builder.build_struct_gep(struct_ty, i as u32, field.get_name());
         }*/
 

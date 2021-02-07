@@ -1,10 +1,9 @@
 #![allow(dead_code)]
 
-use crate::ast::Struct;
 use anyhow::{bail, Result};
 use inkwell::basic_block::BasicBlock;
+use inkwell::types::StructType;
 use inkwell::values::{BasicValueEnum, FunctionValue};
-use inkwell::types::PointerType;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
@@ -143,7 +142,7 @@ impl<'a> LLVMBlockTable<'a> {
 
 #[derive(Debug, Default)]
 pub struct LLVMStructTable<'a> {
-    symbols: HashMap<Key, PointerType<'a>>,
+    symbols: HashMap<Key, StructType<'a>>,
     counter: usize,
 }
 
@@ -152,11 +151,11 @@ impl<'a> LLVMStructTable<'a> {
         self.symbols.contains_key(sym)
     }
 
-    pub fn get(&self, sym: &Key) -> Option<&PointerType<'a>> {
+    pub fn get(&self, sym: &Key) -> Option<&StructType<'a>> {
         self.symbols.get(sym)
     }
 
-    pub fn insert(&mut self, sym: &Key, val: PointerType<'a>) -> Result<()> {
+    pub fn insert(&mut self, sym: &Key, val: StructType<'a>) -> Result<()> {
         if !self.lookup_symbol(sym) {
             self.symbols.insert(sym.clone(), val);
             Ok(())

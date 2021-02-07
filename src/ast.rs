@@ -68,7 +68,7 @@ impl Struct {
 #[derive(Debug, Clone)]
 pub struct Field {
     name: Identifier,
-    ty: DataType,
+    pub ty: DataType,
 }
 
 impl Field {
@@ -87,6 +87,8 @@ impl Field {
 #[derive(Debug, Clone)]
 pub enum DataType {
     I64,
+    I32,
+    Struct(Identifier)
 }
 
 impl Program {

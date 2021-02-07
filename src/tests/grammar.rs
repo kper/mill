@@ -204,6 +204,9 @@ fn parse_struct_with_fields() {
         .parse("struct test123 { test: i64, }")
         .is_ok());
     assert!(grammar::ProgramParser::new()
+        .parse("struct CustomStruct { } struct test123 { test: i64, test123: i32, test456: CustomStruct }")
+        .is_ok());
+    assert!(grammar::ProgramParser::new()
         .parse("struct test123 { test: i64 }")
         .is_ok());
 

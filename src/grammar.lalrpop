@@ -58,8 +58,14 @@ pub Struct : Struct = {
 };
 
 Field: Field = {
-    <id:Id> ":" "i64" <t: ","?> => Field::new(id, DataType::I64)
+    <id:Id> ":" <dat:DataType> <t: ","?> => Field::new(id, dat)
 };
+
+DataType: DataType = {
+    "i64" => DataType::I64,
+    "i32" => DataType::I32,
+    <id:Id> => DataType::Struct(id)
+}
 
 pub Statements = SemiComma<Statement>;
 
