@@ -7,19 +7,19 @@ use inkwell::values::{BasicValueEnum, FunctionValue};
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-pub type Key = IdTy;
+pub type Key = String;
 
 #[derive(Debug, Default)]
 pub struct SymbolTable {
-    symbols: HashSet<IdTy>,
+    symbols: HashSet<Key>,
 }
 
 impl SymbolTable {
-    pub fn lookup_symbol(&self, sym: &IdTy) -> bool {
+    pub fn lookup_symbol(&self, sym: &Key) -> bool {
         self.symbols.contains(sym)
     }
 
-    pub fn insert(&mut self, sym: &IdTy) -> Result<()> {
+    pub fn insert(&mut self, sym: &Key) -> Result<()> {
         if !self.lookup_symbol(sym) {
             self.symbols.insert(sym.clone());
             Ok(())
@@ -36,15 +36,15 @@ pub struct LLVMSymbolTable<'a> {
 }
 
 impl<'a> LLVMSymbolTable<'a> {
-    pub fn lookup_symbol(&self, sym: &IdTy) -> bool {
+    pub fn lookup_symbol(&self, sym: &Key) -> bool {
         self.symbols.contains_key(sym)
     }
 
-    pub fn get(&self, sym: &IdTy) -> Option<&BasicValueEnum<'a>> {
+    pub fn get(&self, sym: &Key) -> Option<&BasicValueEnum<'a>> {
         self.symbols.get(sym)
     }
 
-    pub fn insert(&mut self, sym: &IdTy, val: BasicValueEnum<'a>) -> Result<()> {
+    pub fn insert(&mut self, sym: &Key, val: BasicValueEnum<'a>) -> Result<()> {
         if !self.lookup_symbol(sym) {
             self.symbols.insert(sym.clone(), val);
             Ok(())
@@ -73,15 +73,15 @@ pub struct LLVMFunctionTable<'a> {
 }
 
 impl<'a> LLVMFunctionTable<'a> {
-    pub fn lookup_symbol(&self, sym: &IdTy) -> bool {
+    pub fn lookup_symbol(&self, sym: &Key) -> bool {
         self.symbols.contains_key(sym)
     }
 
-    pub fn get(&self, sym: &IdTy) -> Option<&FunctionValue<'a>> {
+    pub fn get(&self, sym: &Key) -> Option<&FunctionValue<'a>> {
         self.symbols.get(sym)
     }
 
-    pub fn insert(&mut self, sym: &IdTy, val: FunctionValue<'a>) -> Result<()> {
+    pub fn insert(&mut self, sym: &Key, val: FunctionValue<'a>) -> Result<()> {
         if !self.lookup_symbol(sym) {
             self.symbols.insert(sym.clone(), val);
             Ok(())
@@ -110,15 +110,15 @@ pub struct LLVMBlockTable<'a> {
 }
 
 impl<'a> LLVMBlockTable<'a> {
-    pub fn lookup_symbol(&self, sym: &IdTy) -> bool {
+    pub fn lookup_symbol(&self, sym: &Key) -> bool {
         self.symbols.contains_key(sym)
     }
 
-    pub fn get(&self, sym: &IdTy) -> Option<&(BasicBlock<'a>, BasicBlock<'a>)> {
+    pub fn get(&self, sym: &Key) -> Option<&(BasicBlock<'a>, BasicBlock<'a>)> {
         self.symbols.get(sym)
     }
 
-    pub fn insert(&mut self, sym: &IdTy, val: (BasicBlock<'a>, BasicBlock<'a>)) -> Result<()> {
+    pub fn insert(&mut self, sym: &Key, val: (BasicBlock<'a>, BasicBlock<'a>)) -> Result<()> {
         if !self.lookup_symbol(sym) {
             self.symbols.insert(sym.clone(), val);
             Ok(())

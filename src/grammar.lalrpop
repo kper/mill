@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::ast::{Program, Expr, Term, Opcode, Statement, Func, Continuation, Guard};
+use crate::ast::*;
 use lalrpop_util::ParseError;
 use anyhow::Error;
 
@@ -106,5 +106,5 @@ pub Term: Box<Term> = {
 	<id:Id> "(" <exprs:Exprs> ")" => Box::new(Term::Call(id, exprs)),
 };
 
-pub Id: String = <s:r"[a-zA-Z][a-zA-Z0-9]*"> => s.to_string();
+pub Id: Identifier = <l:@L> <s:r"[a-zA-Z][a-zA-Z0-9]*"> <r:@R> => Identifier::new(s.to_string(), l, r);
 Num: i64= <s:r"[0-9]+"> => i64::from_str(s).unwrap();

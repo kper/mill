@@ -6,7 +6,7 @@ use std::borrow::Cow;
 
 pub trait CheckIfFunctionCallExistsVisitor {
     fn lookup(functions: &SymbolTable, name: &IdTy) -> bool {
-        functions.lookup_symbol(name)
+        functions.lookup_symbol(name.get_name())
     }
 
     fn visit(&self, functions: &SymbolTable) -> Result<bool>;

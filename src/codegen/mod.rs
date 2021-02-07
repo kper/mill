@@ -66,9 +66,9 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
 
             let func_types = vec![i64_type.into(); func.pars.len()];
             let fn_type = i64_type.fn_type(&func_types, false);
-            let function = module.add_function(&func.id, fn_type, None);
+            let function = module.add_function(&func.id.get_name(), fn_type, None);
 
-            self.function_table.insert(&func.id, function)?;
+            self.function_table.insert(&func.id.get_name(), function)?;
 
             debug!(
                 "=> Saved function {}({:?}) into the function table",
@@ -88,21 +88,21 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
         let context = &self.context;
         let builder = &self.builder;
 
-        let func_ref = self.function_table.get(&func.id).unwrap();
+        let func_ref = self.function_table.get(func.id.get_name()).unwrap();
 
-        let basic_block = context.append_basic_block(*func_ref, &func.id);
+        let basic_block = context.append_basic_block(*func_ref, func.id.get_name());
 
         builder.position_at_end(basic_block);
 
         for (i, param) in func.pars.iter().enumerate() {
             let value = func_ref.get_nth_param(i as u32).unwrap();
             let i64_type = self.context.i64_type();
-            let ptr = self.builder.build_alloca(i64_type, param);
+            let ptr = self.builder.build_alloca(i64_type, param.get_name());
 
             let _instr = self.builder.build_store(ptr, value);
 
             self.symbol_table
-                .insert(param, BasicValueEnum::PointerValue(ptr))?;
+                .insert(param.get_name(), BasicValueEnum::PointerValue(ptr))?;
             debug!("Allocating functions parameter {}", param);
         }
 
@@ -134,11 +134,11 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
 
                 if let Some(val) = res {
                     let i64_type = self.context.i64_type();
-                    let ptr = self.builder.build_alloca(i64_type, id);
+                    let ptr = self.builder.build_alloca(i64_type, id.get_name());
 
                     let _instr = self.builder.build_store(ptr, val);
                     self.symbol_table
-                        .insert(id, BasicValueEnum::PointerValue(ptr))?;
+                        .insert(id.get_name(), BasicValueEnum::PointerValue(ptr))?;
                 } else {
                     panic!("No value found");
                 }
@@ -147,7 +147,7 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 debug!("Statement is a reassignment");
 
                 let res = self.visit_expr(expr).map(|x| x.into_owned());
-                let ptr = self.symbol_table.get(id);
+                let ptr = self.symbol_table.get(id.get_name());
 
                 if res.is_none() {
                     bail!("Evaluated expression is None");
@@ -182,20 +182,20 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
         debug!("Visiting guard");
 
         let cond_block = self.context.append_basic_block(
-            *self.function_table.get(function_id).unwrap(),
+            *self.function_table.get(function_id.get_name()).unwrap(),
             &self.function_table.get_new_name(),
         );
 
         self.builder.build_unconditional_branch(cond_block);
 
         let after_cond_block = self.context.append_basic_block(
-            *self.function_table.get(function_id).unwrap(),
+            *self.function_table.get(function_id.get_name()).unwrap(),
             &self.function_table.get_new_name(),
         );
         if let Some(label) = label {
             debug!("Saving block with label {}", label);
             self.block_table
-                .insert(label, (cond_block, after_cond_block))?;
+                .insert(label.get_name(), (cond_block, after_cond_block))?;
         }
 
         self.builder.position_at_end(cond_block);
@@ -206,12 +206,12 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
             let res = self.visit_expr(&*condition).map(|x| x.into_owned());
 
             let then_block = self.context.append_basic_block(
-                *self.function_table.get(function_id).unwrap(),
+                *self.function_table.get(function_id.get_name()).unwrap(),
                 &self.function_table.get_new_name(),
             );
 
             let else_block = self.context.append_basic_block(
-                *self.function_table.get(function_id).unwrap(),
+                *self.function_table.get(function_id.get_name()).unwrap(),
                 &self.function_table.get_new_name(),
             );
 
@@ -242,11 +242,11 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 }
                 Continuation::Break(Some(ref label)) => {
                     self.builder
-                        .build_unconditional_branch(self.block_table.get(label).unwrap().1);
+                        .build_unconditional_branch(self.block_table.get(label.get_name()).unwrap().1);
                 }
                 Continuation::Continue(Some(ref label)) => {
                     self.builder
-                        .build_unconditional_branch(self.block_table.get(label).unwrap().0);
+                        .build_unconditional_branch(self.block_table.get(label.get_name()).unwrap().0);
                 }
             }
 
@@ -255,7 +255,7 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
             debug!("=> has no condition");
 
             let basic_block = self.context.append_basic_block(
-                *self.function_table.get(function_id).unwrap(),
+                *self.function_table.get(function_id.get_name()).unwrap(),
                 &self.function_table.get_new_name(),
             );
 
@@ -276,11 +276,11 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 }
                 Continuation::Break(Some(ref label)) => {
                     self.builder
-                        .build_unconditional_branch(self.block_table.get(label).unwrap().1);
+                        .build_unconditional_branch(self.block_table.get(label.get_name()).unwrap().1);
                 }
                 Continuation::Continue(Some(ref label)) => {
                     self.builder
-                        .build_unconditional_branch(self.block_table.get(label).unwrap().0);
+                        .build_unconditional_branch(self.block_table.get(label.get_name()).unwrap().0);
                 }
             }
         }
@@ -305,10 +305,10 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
             Expr::Id(id) => {
                 debug!("=> is an ident {}", id);
 
-                let var = self.symbol_table.get(id).map(|x| Cow::Borrowed(x));
+                let var = self.symbol_table.get(id.get_name()).map(|x| Cow::Borrowed(x));
                 if let Some(var) = var {
                     let ptr = var.into_pointer_value();
-                    return Some(Cow::Owned(self.builder.build_load(ptr, id)));
+                    return Some(Cow::Owned(self.builder.build_load(ptr, id.get_name())));
                 } else {
                     panic!("No entry in symbol table");
                 }
@@ -424,10 +424,10 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
             Term::Id(id) => {
                 debug!("=> term is an ident {}", id);
 
-                let var = self.symbol_table.get(id).map(|x| Cow::Borrowed(x));
+                let var = self.symbol_table.get(id.get_name()).map(|x| Cow::Borrowed(x));
                 if let Some(var) = var {
                     let ptr = var.into_pointer_value();
-                    return Some(Cow::Owned(self.builder.build_load(ptr, id)));
+                    return Some(Cow::Owned(self.builder.build_load(ptr, id.get_name())));
                 } else {
                     panic!("No entry in symbol table");
                 }
@@ -441,10 +441,10 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     .map(|x| x.unwrap())
                     .collect();
 
-                if let Some(func_ref) = self.function_table.get(id) {
+                if let Some(func_ref) = self.function_table.get(id.get_name()) {
                     return Some(Cow::Owned(
                         self.builder
-                            .build_call(*func_ref, &arguments, id)
+                            .build_call(*func_ref, &arguments, id.get_name())
                             .try_as_basic_value()
                             .left()
                             .unwrap(),

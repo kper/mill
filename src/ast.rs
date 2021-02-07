@@ -4,8 +4,39 @@ use crate::visitors::CheckIfFunctionCallExistsVisitor;
 use crate::visitors::CodegenVisitor;
 use anyhow::{bail, Result};
 use std::collections::HashSet;
+use std::fmt;
+use std::hash::{Hash, Hasher};
 
-pub type IdTy = String;
+pub type IdTy = Identifier;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Identifier {
+    id: String,
+    pos_l: usize,
+    pos_r: usize,
+}
+
+impl Identifier {
+    pub fn new(id: String, pos_l: usize, pos_r: usize) -> Self {
+        Self { id, pos_l, pos_r }
+    }
+
+    pub fn get_name(&self) -> &String {
+        &self.id
+    }
+}
+
+impl fmt::Display for Identifier {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.id)
+    }
+}
+
+impl Hash for Identifier {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
 
 #[derive(Debug)]
 pub struct Program {
@@ -18,7 +49,7 @@ impl Program {
         let mut set = SymbolTable::default();
 
         for name in self.functions.iter().map(|w| &w.id) {
-            set.insert(name)?;
+            set.insert(name.get_name())?;
         }
 
         Ok(set)
@@ -29,7 +60,7 @@ impl Program {
     pub fn check_duplicated_names(&self) -> bool {
         let mut set = HashSet::new();
 
-        for name in self.functions.iter().map(|w| &w.id) {
+        for name in self.functions.iter().map(|w| w.id.get_name()) {
             if set.contains(&name) {
                 return true;
             }
@@ -94,9 +125,9 @@ impl Func {
 
         for stmt in statements.iter() {
             match &**stmt {
-                Statement::Assign(id, _) => symbol_table.insert(id)?,
+                Statement::Assign(id, _) => symbol_table.insert(id.get_name())?,
                 Statement::ReAssign(id, _) => {
-                    if !symbol_table.lookup_symbol(&id) {
+                    if !symbol_table.lookup_symbol(&id.get_name()) {
                         bail!("Symbol {} is not defined", id);
                     }
                 }
@@ -184,7 +215,7 @@ pub enum Continuation {
 #[derive(Debug)]
 pub enum Expr {
     Num(i32),
-    Id(String),
+    Id(Identifier),
     // like addition, multiplication
     Chained(Opcode, Box<Term>, Box<Expr>),
     // not, head, tail, islist
@@ -245,7 +276,7 @@ impl CheckIfFunctionCallExistsVisitor for Term {
     fn visit(&self, symbol_table: &SymbolTable) -> Result<bool> {
         match &*self {
             Term::Call(id, exprs) => {
-                if !symbol_table.lookup_symbol(&id) {
+                if !symbol_table.lookup_symbol(&id.get_name()) {
                     bail!("Function {} is not defined", id);
                 }
 
