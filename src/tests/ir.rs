@@ -77,3 +77,8 @@ fn test_mixed_guards() {
 fn test_struct() {
     compile!("struct test { a: int }");
 }
+
+#[test]
+fn test_alloc_struct() {
+    compile!("struct test { a: int, b: int } fn main() { let a = new test; }");
+}

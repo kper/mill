@@ -4,7 +4,7 @@ use crate::visitors::CodegenVisitor;
 use std::borrow::Cow;
 use std::path::Path;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use inkwell::builder::Builder;
 use inkwell::context::Context as LLVM_Context;
 use inkwell::module::Module;
@@ -54,6 +54,22 @@ impl<'ctx> Codegen<'ctx> {
 
     pub fn get_ir(&self) -> String {
         self.module.print_to_string().to_string()
+    }
+
+    pub fn get_llvm_type(&self, ty: &DataType) -> Result<BasicTypeEnum<'ctx>> {
+        match ty {
+            DataType::Int => {
+                return Ok(BasicTypeEnum::IntType(self.context.i64_type()));
+            }
+            DataType::Struct(id) => {
+                let ty = self
+                    .struct_table
+                    .get(id.get_name())
+                    .ok_or_else(|| (anyhow!("Cannot find struct")))?;
+
+                return Ok(BasicTypeEnum::StructType(*ty));
+            }
+        }
     }
 }
 
@@ -115,7 +131,7 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
             debug!("Allocating functions parameter {}", param);
         }
 
-        for stmt in func.statements.iter() {
+        for stmt in func.statements.iter_mut() {
             self.visit_statement(stmt, &func.id)?;
         }
 
@@ -124,22 +140,22 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
         Ok(())
     }
 
-    fn visit_statement(&mut self, stmt: &Statement, func: &IdTy) -> Result<()> {
+    fn visit_statement(&mut self, stmt: &mut Statement, func: &IdTy) -> Result<()> {
         debug!("Visiting statement");
 
         match stmt {
-            Statement::Ret(expr) => {
+            Statement::Ret(ref mut expr) => {
                 debug!("Statement is a return statement");
 
-                let res = self.visit_expr(expr).map(|x| x.into_owned());
+                let res = self.visit_expr(expr, &None).map(|x| x.into_owned());
                 let ret: Option<&dyn BasicValue> = res.as_ref().map(|x| x as &dyn BasicValue);
 
                 self.builder.build_return(ret);
             }
-            Statement::Assign(id, expr) => {
+            Statement::Assign(id, ref mut expr) => {
                 debug!("Statement is an assignment");
 
-                let res = self.visit_expr(expr).map(|x| x.into_owned());
+                let res = self.visit_expr(expr, &id.ty).map(|x| x.into_owned());
 
                 if let Some(val) = res {
                     let i64_type = self.context.i64_type();
@@ -152,10 +168,22 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     panic!("No value found");
                 }
             }
-            Statement::ReAssign(id, expr) => {
+            Statement::Allocate(symbol, alloc_struct) => {
+                debug!("Statement is an allocation");
+
+                let ty = self.struct_table.get(alloc_struct.get_name()).unwrap();
+                let ptr = self
+                    .builder
+                    .build_alloca(BasicTypeEnum::StructType(*ty), symbol.get_name());
+
+                //let _instr = self.builder.build_store(ptr, val);
+                self.symbol_table
+                    .insert(symbol.get_name(), BasicValueEnum::PointerValue(ptr))?;
+            }
+            Statement::ReAssign(id, ref mut expr) => {
                 debug!("Statement is a reassignment");
 
-                let res = self.visit_expr(expr).map(|x| x.into_owned());
+                let res = self.visit_expr(expr, &id.ty).map(|x| x.into_owned());
                 let ptr = self.symbol_table.get(id.get_name());
 
                 if res.is_none() {
@@ -169,10 +197,10 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     let _instr = self.builder.build_store(ptr.into_pointer_value(), val);
                 }
             }
-            Statement::Conditional(id, guards) => {
+            Statement::Conditional(id, ref mut guards) => {
                 debug!("Statement is a conditional ({:?})", id);
 
-                for guard in guards.iter() {
+                for guard in guards.iter_mut() {
                     self.visit_guard(id, guard, func)
                         .context("Visiting guard in the conditional")?;
                 }
@@ -185,7 +213,7 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
     fn visit_guard(
         &mut self,
         label: &Option<IdTy>,
-        guard: &Guard,
+        guard: &mut Guard,
         function_id: &IdTy,
     ) -> Result<()> {
         debug!("Visiting guard");
@@ -209,10 +237,12 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
 
         self.builder.position_at_end(cond_block);
 
-        if let Some(condition) = &guard.guard {
+        if let Some(condition) = &mut guard.guard {
             debug!("=> has a condition");
 
-            let res = self.visit_expr(&*condition).map(|x| x.into_owned());
+            let res = self
+                .visit_expr(&mut *condition, &None)
+                .map(|x| x.into_owned());
 
             let then_block = self.context.append_basic_block(
                 *self.function_table.get(function_id.get_name()).unwrap(),
@@ -237,7 +267,7 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
             self.builder.position_at_end(then_block);
 
             let cpy_symbols = self.symbol_table.clone();
-            for stmt in guard.statements.iter() {
+            for stmt in guard.statements.iter_mut() {
                 self.visit_statement(stmt, function_id)?;
             }
             self.symbol_table = cpy_symbols;
@@ -273,7 +303,7 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
             self.builder.position_at_end(basic_block);
 
             let cpy_symbols = self.symbol_table.clone();
-            for stmt in guard.statements.iter() {
+            for stmt in guard.statements.iter_mut() {
                 self.visit_statement(stmt, function_id)?;
             }
             self.symbol_table = cpy_symbols;
@@ -303,7 +333,11 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
         Ok(())
     }
 
-    fn visit_expr(&mut self, expr: &Expr) -> Option<Cow<BasicValueEnum<'ctx>>> {
+    fn visit_expr(
+        &mut self,
+        expr: &mut Expr,
+        _ty: &Option<DataType>,
+    ) -> Option<Cow<BasicValueEnum<'ctx>>> {
         debug!("Visiting expr");
 
         match expr {
@@ -394,7 +428,7 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 debug!("=> chained");
 
                 let lhs = self.visit_term(lhs).map(|x| x.into_owned());
-                let rhs = self.visit_expr(rhs).map(|x| x.into_owned());
+                let rhs = self.visit_expr(rhs, &None).map(|x| x.into_owned());
 
                 if let (Some(lhs), Some(rhs)) = (lhs, rhs) {
                     let res = match op {
@@ -425,7 +459,7 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
         }
     }
 
-    fn visit_term(&mut self, term: &Term) -> Option<Cow<BasicValueEnum<'ctx>>> {
+    fn visit_term(&mut self, term: &mut Term) -> Option<Cow<BasicValueEnum<'ctx>>> {
         debug!("Visit term");
 
         match term {
@@ -451,12 +485,12 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     panic!("No entry in symbol table");
                 }
             }
-            Term::Call(id, pars) => {
+            Term::Call(id, ref mut pars) => {
                 debug!("=> term is a call {}({:?})", id, pars);
 
                 let arguments: Vec<_> = pars
-                    .iter()
-                    .map(|x| self.visit_expr(x).map(|x| x.into_owned()))
+                    .iter_mut()
+                    .map(|x| self.visit_expr(x, &id.ty).map(|x| x.into_owned()))
                     .map(|x| x.unwrap())
                     .collect();
 
@@ -482,7 +516,7 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
 
         let i64_ty = self.context.i64_type();
 
-        let mut field_types : Vec<BasicTypeEnum> = Vec::new();
+        let mut field_types: Vec<BasicTypeEnum> = Vec::new();
 
         for (_i, field) in mystruct.fields.iter().enumerate() {
             match &field.ty {
@@ -503,10 +537,6 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
         //TODO allow recursive datatypes
         self.struct_table
             .insert(mystruct.name.get_name(), struct_ty)?;
-
-        /*
-            self.builder.build_struct_gep(struct_ty, i as u32, field.get_name());
-        }*/
 
         Ok(())
     }

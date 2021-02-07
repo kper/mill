@@ -15,9 +15,9 @@ pub trait CheckIfFunctionCallExistsVisitor {
 pub trait CodegenVisitor<'ctx> {
     fn visit_program(&mut self, program: &'ctx mut Program) -> Result<()>;
     fn visit_func(&mut self, func: &'ctx mut Func) -> Result<()>;
-    fn visit_statement(&mut self, stmt: &Statement, function: &IdTy) -> Result<()>;
-    fn visit_guard(&mut self, label: &Option<IdTy>, guard: &Guard, function: &IdTy) -> Result<()>;
-    fn visit_expr(&mut self, expr: &Expr) -> Option<Cow<BasicValueEnum<'ctx>>>;
-    fn visit_term(&mut self, term: &Term) -> Option<Cow<BasicValueEnum<'ctx>>>;
+    fn visit_statement(&mut self, stmt: &mut Statement, function: &IdTy) -> Result<()>;
+    fn visit_guard(&mut self, label: &Option<IdTy>, guard: &mut Guard, function: &IdTy) -> Result<()>;
+    fn visit_expr(&mut self, expr: &mut Expr, ty: &Option<DataType>) -> Option<Cow<BasicValueEnum<'ctx>>>;
+    fn visit_term(&mut self, term: &mut Term) -> Option<Cow<BasicValueEnum<'ctx>>>;
     fn visit_struct(&mut self, mystruct: &Struct) -> Result<()>;
 }

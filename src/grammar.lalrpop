@@ -82,7 +82,8 @@ pub Statement: Box<Statement> = {
     <id:Id> ":" <cond:Conditional> => Box::new(Statement::Conditional(Some(id), cond)),
     <cond:Conditional> => Box::new(Statement::Conditional(None, cond)),
     <cond:Conditional> <id:Id> ":" => Box::new(Statement::Conditional(Some(id), cond)),
-	<id:Id> "=" <e:Expr> => Box::new(Statement::ReAssign(id, e))
+	<id:Id> "=" <e:Expr> => Box::new(Statement::ReAssign(id, e)),
+	"let" <id:Id> "=" "new" <st:Id> => Box::new(Statement::Allocate(id, st))
 };
 
 pub Conditional: Vec<Box<Guard>> = {

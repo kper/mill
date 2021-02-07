@@ -14,7 +14,7 @@ pub struct Identifier {
     id: String,
     pos_l: usize,
     pos_r: usize,
-    ty: Option<DataType>,
+    pub ty: Option<DataType>,
 }
 
 impl Identifier {
@@ -212,6 +212,7 @@ pub enum Statement {
     Assign(IdTy, Box<Expr>),
     ReAssign(IdTy, Box<Expr>),
     Conditional(Option<IdTy>, Vec<Box<Guard>>),
+    Allocate(IdTy, IdTy),
 }
 
 impl CheckIfFunctionCallExistsVisitor for Statement {
@@ -230,6 +231,9 @@ impl CheckIfFunctionCallExistsVisitor for Statement {
                 for guard in guards {
                     <Guard as CheckIfFunctionCallExistsVisitor>::visit(&guard, symbol_table)?;
                 }
+            }
+            Statement::Allocate(_, _) => {
+
             }
         }
 
@@ -268,6 +272,7 @@ pub enum Continuation {
 pub enum Expr {
     Num(i32),
     Id(Identifier),
+    Struct(Identifier),
     // like addition, multiplication
     Chained(Opcode, Box<Term>, Box<Expr>),
     // not, head, tail, islist
