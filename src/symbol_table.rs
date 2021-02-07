@@ -9,7 +9,7 @@ use std::collections::HashSet;
 
 pub type Key = String;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct SymbolTable {
     symbols: HashSet<Key>,
 }

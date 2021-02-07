@@ -41,6 +41,26 @@ impl Hash for Identifier {
 #[derive(Debug)]
 pub struct Program {
     pub functions: Vec<Func>,
+    pub structs: Vec<Struct>,
+}
+
+#[derive(Debug, Clone)]
+pub enum Decl {
+    Func(Func),
+    Struct(Struct),
+}
+
+#[derive(Debug, Clone)]
+pub struct Struct {
+    name: Identifier,
+}
+
+impl Struct {
+    pub fn new(name: Identifier) -> Result<Self> {
+        Ok(Self {
+            name 
+        })
+    }
 }
 
 impl Program {
@@ -110,7 +130,7 @@ impl CheckIfFunctionCallExistsVisitor for Program {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Func {
     pub id: IdTy,
     pub pars: Vec<IdTy>,
@@ -154,7 +174,7 @@ impl CheckIfFunctionCallExistsVisitor for Func {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     Ret(Box<Expr>),
     Assign(IdTy, Box<Expr>),
@@ -185,7 +205,7 @@ impl CheckIfFunctionCallExistsVisitor for Statement {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Guard {
     pub guard: Option<Box<Expr>>,
     pub statements: Vec<Box<Statement>>,
@@ -206,13 +226,13 @@ impl CheckIfFunctionCallExistsVisitor for Guard {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Continuation {
     Continue(Option<IdTy>),
     Break(Option<IdTy>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
     Num(i32),
     Id(Identifier),
@@ -249,7 +269,7 @@ impl CheckIfFunctionCallExistsVisitor for Expr {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Opcode {
     Mul,
     Div,
@@ -265,7 +285,7 @@ pub enum Opcode {
     Cmp,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Term {
     Num(i64),
     Id(IdTy),

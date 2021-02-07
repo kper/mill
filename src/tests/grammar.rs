@@ -172,22 +172,6 @@ fn test_function_defined_twice() {
     );
 }
 
-/*
-#[test]
-fn test_function_calls_when_not_defined() {
-    use crate::visitors::CheckIfFunctionCallExistsVisitor;
-
-    let parsed = grammar::ProgramParser::new()
-        .parse("x(a,b,c) return k(a, b); end;")
-        .unwrap();
-
-    let functions = parsed.get_function_names().unwrap();
-    assert_eq!(
-        extract_user_error!(parsed.visit(&functions).unwrap_err()),
-        ("Function k is not defined")
-    );
-}*/
-
 #[test]
 fn test_function_calls_when_defined() {
     use crate::visitors::CheckIfFunctionCallExistsVisitor;
@@ -198,4 +182,18 @@ fn test_function_calls_when_defined() {
 
     let functions = parsed.get_function_names().unwrap();
     assert_eq!(parsed.visit(&functions).unwrap(), true);
+}
+
+#[test]
+fn parse_struct() {
+    assert!(grammar::ProgramParser::new()
+        .parse("struct test { }")
+        .is_ok());
+}
+
+#[test]
+fn parse_struct_with_func() {
+    assert!(grammar::ProgramParser::new()
+        .parse("struct test123 { } fn x(a,b,c) { return a; } fn test(a,b,c) { return b; }")
+        .is_ok());
 }

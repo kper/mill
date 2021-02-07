@@ -29,11 +29,30 @@ Vec<T>: Vec<T> = {
 };
 
 pub Pars = Comma<Id>;
-pub Program : Program = <funcs:Vec<Funcdef>> => Program {
-    functions: funcs
+pub Program : Program = <decls:Vec<Decl>> => {
+    Program {
+        functions: decls.clone().into_iter()
+                        .filter_map(|w| match w { Decl::Func(f) => Some(f), _ => None })
+                        .collect(),
+        structs: decls.clone().into_iter()
+                        .filter_map(|w| match w { Decl::Struct(f) => Some(f), _ => None })
+                        .collect()
+    }
 };
+
+pub Decl: Decl = {
+    <f:Funcdef> => Decl::Func(f),
+    <s:Struct> => Decl::Struct(s)
+};
+
 pub Funcdef : Func = {
 	"fn" <id:Id> "(" <pars:Pars> ")" "{" <statements:Statements> "}" =>? Func::new(id, pars, statements).map_err(|w| ParseError::User {
+        error: w
+    })
+};
+
+pub Struct : Struct = {
+    "struct" <id:Id> "{" "}" =>? Struct::new(id).map_err(|w| ParseError::User {
         error: w
     })
 };
