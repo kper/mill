@@ -3,7 +3,7 @@
 Mill is a compiler based on LLVM-10.
 
 ```
-fn greaterThan(a,b) {
+fn greaterThan(a: int,b: int) {
   match
         a >= b  -> return a; break; 
         _       -> return b; break; 
@@ -11,9 +11,26 @@ fn greaterThan(a,b) {
 }
 
 fn main() {
- let a = 10;
- let b = 5;
+ let a : int = 10;
+ let b : int = 5;
  return greaterThan(a,b);
+}
+```
+
+```
+struct Point { 
+	x: int, 
+	y: int 
+}
+
+fn getx() {
+	let p = new Point;
+	p.x = 100;
+	return p.x;
+}
+
+fn main() {
+ return getx();
 }
 ```
 

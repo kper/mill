@@ -58,13 +58,13 @@ pub Funcdef : Func = {
 };
 
 pub Struct : Struct = {
-    "struct" <id:Id> "{" <fields:Vec<Field>> "}" =>? Struct::new(id, fields).map_err(|w| ParseError::User {
+    "struct" <id:Id> "{" <fields:Comma<Field>> "}" =>? Struct::new(id, fields).map_err(|w| ParseError::User {
         error: w
     })
 };
 
 Field: Field = {
-    <id:Id> ":" <dat:DataType> <t: ","?> => Field::new(id, dat)
+    <id:Id> ":" <dat:DataType> => Field::new(id, dat)
 };
 
 DataType: DataType = {
