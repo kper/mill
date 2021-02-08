@@ -82,7 +82,9 @@ pub Statement: Box<Statement> = {
     <id:Id> ":" <cond:Conditional> => Box::new(Statement::Conditional(Some(id), cond)),
     <cond:Conditional> => Box::new(Statement::Conditional(None, cond)),
     <cond:Conditional> <id:Id> ":" => Box::new(Statement::Conditional(Some(id), cond)),
-	<id:Id> "=" <e:Expr> => Box::new(Statement::ReAssign(id, e)),
+    <id:Id> "=" <e:Expr> => Box::new(Statement::ReAssign(id, e)),
+    <id:Id> "." <field:Id> "=" <e:Expr> => 
+        Box::new(Statement::ReAssign(id.update_field_access(Some(field)), e)),
 	"let" <id:Id> "=" "new" <st:Id> =>
         Box::new(Statement::Allocate(id.update_ty(DataType::Struct(Box::new(st.clone()))), st))
 };
@@ -139,7 +141,8 @@ ExprOp: Opcode = {
 pub Term: Box<Term> = {
 	Num => Box::new(Term::Num(<>)),
 	Id => Box::new(Term::Id(<>)),
-	<obj:Id> "." <field:Id> => Box::new(Term::Object(obj, field)),
+    <obj:Id> "." <field:Id> => 
+        Box::new(Term::Object(obj.update_field_access(Some(field.clone())), field)),
 	"(" <n:Term> ")" => n,
 	<id:Id> "(" <exprs:Exprs> ")" => Box::new(Term::Call(id, exprs)),
 };

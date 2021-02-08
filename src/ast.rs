@@ -15,6 +15,7 @@ pub struct Identifier {
     pos_l: usize,
     pos_r: usize,
     pub ty: Option<DataType>,
+    field: Option<Box<Identifier>>,
 }
 
 impl Identifier {
@@ -24,6 +25,7 @@ impl Identifier {
             pos_l,
             pos_r,
             ty,
+            field: None,
         }
     }
 
@@ -34,6 +36,19 @@ impl Identifier {
 
     pub fn get_name(&self) -> &String {
         &self.id
+    }
+
+    pub fn update_field_access(mut self, field: Option<Identifier>) -> Self {
+        self.field = field.map(|x| Box::new(x));
+        self
+    }
+
+    pub fn is_field_access(&self) -> bool {
+        self.field.is_some()
+    }
+
+    pub fn get_field(&self) -> &Option<Box<Identifier>> {
+        &self.field
     }
 }
 
@@ -190,6 +205,7 @@ impl Func {
         for stmt in statements.iter() {
             match &**stmt {
                 Statement::Assign(id, _) => symbol_table.insert(id.get_name())?,
+                Statement::Allocate(id, _) => symbol_table.insert(id.get_name())?,
                 Statement::ReAssign(id, _) => {
                     if !symbol_table.lookup_symbol(&id.get_name()) {
                         bail!("Symbol {} is not defined", id);

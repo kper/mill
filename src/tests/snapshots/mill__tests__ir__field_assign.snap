@@ -10,10 +10,12 @@ define i64 @main() {
 main:
   %o = alloca { i64, i64 }
   %a = getelementptr inbounds { i64, i64 }, { i64, i64 }* %o, i32 0, i32 0
-  %a1 = load i64, i64* %a
+  store i64 10, i64* %a
+  %a1 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %o, i32 0, i32 0
+  %a2 = load i64, i64* %a1
   %k = alloca i64
-  store i64 %a1, i64* %k
-  %k2 = load i64, i64* %k
-  ret i64 %k2
+  store i64 %a2, i64* %k
+  %k3 = load i64, i64* %k
+  ret i64 %k3
 }
 

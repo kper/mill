@@ -180,7 +180,10 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                     .builder
                     .build_alloca(BasicTypeEnum::StructType(*ty), symbol.get_name());
 
+                debug!("=> the type of {} is {:?}", symbol.get_name(), symbol.ty);
+
                 //let _instr = self.builder.build_store(ptr, val);
+                debug!("Allocating struct in variable {}", symbol.get_name());
                 self.symbol_table.insert(
                     symbol.get_name(),
                     (symbol.clone(), BasicValueEnum::PointerValue(ptr)),
@@ -190,17 +193,48 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                 debug!("Statement is a reassignment");
 
                 let res = self.visit_expr(expr, &id.ty).map(|x| x.into_owned());
-                let ptr = self.symbol_table.get(id.get_name());
 
                 if res.is_none() {
                     bail!("Evaluated expression is None");
                 }
-                if ptr.is_none() {
-                    bail!("Symbol {} not found", id);
-                }
+                if let Some((symbol, ptr)) = self.symbol_table.get_both(id.get_name()) {
+                    if !id.is_field_access() {
+                        let _instr = self
+                            .builder
+                            .build_store(ptr.into_pointer_value(), res.unwrap());
+                    } else {
+                        if let Some(field) = id.get_field() {
+                            let name_struct = match &symbol.ty.as_ref().unwrap() {
+                                DataType::Struct(id) => id.get_name(),
+                                _ => bail!("Field accessed on primary type"),
+                            };
 
-                if let (Some(val), Some(ptr)) = (res, ptr) {
-                    let _instr = self.builder.build_store(ptr.into_pointer_value(), val);
+                            let (my_struct, _llvm_struct) =
+                                self.struct_table.get(name_struct).unwrap();
+                            let index = my_struct.get_id_by_field_name(field.get_name()).unwrap();
+
+                            let element_ptr = self
+                                .builder
+                                .build_struct_gep(
+                                    ptr.into_pointer_value(),
+                                    index as u32,
+                                    field.get_name(),
+                                )
+                                .unwrap();
+
+                            self.builder
+                                .build_store(element_ptr, res.unwrap());
+
+                            return Ok(());
+                        } else {
+                            bail!(
+                                "Symbol {} has fields, but they were not defined.",
+                                id.get_name()
+                            );
+                        }
+                    }
+                } else {
+                    bail!("Symbol {} not found", id);
                 }
             }
             Statement::Conditional(id, ref mut guards) => {
@@ -503,11 +537,17 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
                         let index = my_struct.get_id_by_field_name(field.get_name()).unwrap();
 
                         let ptr = llvm_sym.into_pointer_value();
-                        return Some(Cow::Owned(BasicValueEnum::PointerValue(
-                            self.builder
-                                .build_struct_gep(ptr, index as u32, field.get_name())
-                                .unwrap(),
-                        )));
+
+                        // Getting the pointer to the field's struct
+                        let element_ptr = self
+                            .builder
+                            .build_struct_gep(ptr, index as u32, field.get_name())
+                            .unwrap();
+
+                        // Loading the pointer of the field
+                        return Some(Cow::Owned(
+                            self.builder.build_load(element_ptr, field.get_name()),
+                        ));
                     } else {
                         panic!("Identfier has wrong type");
                     }

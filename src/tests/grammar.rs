@@ -84,6 +84,13 @@ fn parse_statement() {
     assert!(grammar::StatementParser::new()
         .parse("id: match _ -> return not a; break; _ -> return not a; break; end")
         .is_ok());
+    assert!(grammar::StatementParser::new()
+        .parse("x.w = not a")
+        .is_ok());
+    assert!(grammar::StatementParser::new()
+        .parse("x.w = not a.o")
+        .is_ok());
+
 }
 
 #[test]
