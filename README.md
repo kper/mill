@@ -1,6 +1,6 @@
 # Mill
 
-Mill is a compiler based on LLVM-10.
+Mill is a compiler based on LLVM-10. This project is actually a backup project idea for my undergrad bakk. thesis.
 
 ```
 fn greaterThan(a: int,b: int) {
@@ -40,3 +40,5 @@ it supports ...
 * if statements
 * loops
 * function calls
+
+However, an important feature is still in planning: heap allocation
