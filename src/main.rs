@@ -11,6 +11,9 @@ mod codegen;
 mod symbol_table;
 mod visitors;
 
+use visitors::*;
+use ast::{Pass, Runner};
+
 use log::info;
 
 #[cfg(test)]
@@ -50,7 +53,10 @@ fn main() {
 
     info!("=> Starting codegen");
 
-    if let Err(err) = ast.visit(&functions) {
+    let runner = Runner;
+    if let Err(err) = runner.run_visitors(vec![
+        Pass::new(Box::new(PrintVisitor), Box::new(NormalTraversal)), 
+    ], &mut ast) {
         eprintln!("ERROR: {}", err);
         err.chain()
             .skip(1)

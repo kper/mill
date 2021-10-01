@@ -2,10 +2,13 @@ use crate::codegen::Codegen;
 use crate::symbol_table::SymbolTable;
 use crate::visitors::CheckIfFunctionCallExistsVisitor;
 use crate::visitors::CodegenVisitor;
+use crate::visitors::Visitor;
+use either::Either;
 use anyhow::{bail, Result};
 use std::collections::HashSet;
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use crate::Traversal;
 
 pub type IdTy = Identifier;
 
@@ -179,6 +182,45 @@ impl Program {
     }
 }
 
+pub struct Pass<'ctx> {
+    visitor: Box<dyn Visitor<'ctx>>,
+    traversal: Box<dyn Traversal>,
+}
+
+impl<'ctx> Pass <'ctx>
+{
+    pub fn new(visitor: Box<dyn Visitor<'ctx>>, traversal: Box<dyn Traversal>) -> Self {
+        Self {
+            visitor,
+            traversal
+        }
+    }
+
+    pub fn run(&mut self, program: &'ctx mut Program,) -> Result<()> {
+        self.traversal.traverse(&mut self.visitor, program)?;
+
+        Ok(())
+    }
+}
+
+pub struct Runner;
+
+impl Runner {
+    /**
+     * Run the visitors
+     */
+    pub fn run_visitors<'a>(&'a mut self, passes: Vec<Pass<'a>>, program: &'a mut Program) -> Result<()> {
+
+        for mut pass in passes.into_iter() {
+            pass.run(program)?;
+        }
+
+        
+        Ok(())
+    }
+}
+
+/*
 impl CheckIfFunctionCallExistsVisitor for Program {
     fn visit(&self, symbol_table: &SymbolTable) -> Result<bool> {
         for function in &self.functions {
@@ -187,7 +229,7 @@ impl CheckIfFunctionCallExistsVisitor for Program {
 
         Ok(true)
     }
-}
+}*/
 
 #[derive(Debug, Clone)]
 pub struct Func {
@@ -241,6 +283,28 @@ pub enum Statement {
     ReAssign(IdTy, Box<Expr>),
     Conditional(Option<IdTy>, Vec<Box<Guard>>),
     Allocate(IdTy, IdTy),
+}
+
+impl Statement {
+    pub fn get_mut_inner(&mut self) -> Option<Either<&mut Box<Expr>, &mut Vec<Box<Guard>>>> {
+        match self {
+            Statement::Ret(expr) => {
+                return Some(Either::Left(expr));
+            }
+            Statement::Assign(_, expr) => {
+                return Some(Either::Left(expr));
+            }
+            Statement::ReAssign(_, expr) => {
+                return Some(Either::Left(expr));
+            }
+            Statement::Conditional(_, guards) => {
+                return Some(Either::Right(guards));
+            }
+            Statement::Allocate(_, _) => {
+                return None;
+            }
+        }
+    }
 }
 
 impl CheckIfFunctionCallExistsVisitor for Statement {
