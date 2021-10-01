@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate lalrpop_util;
 
-use crate::visitors::CheckIfFunctionCallExistsVisitor;
 use std::env;
 use std::fs::File;
 use std::io::Read;
@@ -63,6 +62,7 @@ fn main() {
     let mut runner = Runner;
     if let Err(err) = runner.run_visitors(vec![
         Pass::new(Box::new(PrintVisitor), Box::new(NormalTraversal)), 
+        Pass::new(Box::new(CheckIfFunctionCallExistsVisitor::default()), Box::new(NormalTraversal))
     ], &mut ast) {
         eprintln!("ERROR: {}", err);
         err.chain()

@@ -1,6 +1,5 @@
 use crate::codegen::Codegen;
 use crate::symbol_table::SymbolTable;
-use crate::visitors::CheckIfFunctionCallExistsVisitor;
 use crate::visitors::CodegenVisitor;
 use crate::visitors::Visitor;
 use either::Either;
@@ -217,16 +216,6 @@ impl Func {
     }
 }
 
-impl CheckIfFunctionCallExistsVisitor for Func {
-    fn visit(&self, symbol_table: &SymbolTable) -> Result<bool> {
-        for stmt in &self.statements {
-            <Statement as CheckIfFunctionCallExistsVisitor>::visit(stmt, symbol_table)?;
-        }
-
-        Ok(true)
-    }
-}
-
 #[derive(Debug, Clone)]
 pub enum Statement {
     Ret(Box<Expr>),
@@ -258,49 +247,11 @@ impl Statement {
     }
 }
 
-impl CheckIfFunctionCallExistsVisitor for Statement {
-    fn visit(&self, symbol_table: &SymbolTable) -> Result<bool> {
-        match &*self {
-            Statement::Ret(expr) => {
-                <Expr as CheckIfFunctionCallExistsVisitor>::visit(&expr, symbol_table)?;
-            }
-            Statement::Assign(_, expr) => {
-                <Expr as CheckIfFunctionCallExistsVisitor>::visit(&expr, symbol_table)?;
-            }
-            Statement::ReAssign(_, expr) => {
-                <Expr as CheckIfFunctionCallExistsVisitor>::visit(&expr, symbol_table)?;
-            }
-            Statement::Conditional(_, guards) => {
-                for guard in guards {
-                    <Guard as CheckIfFunctionCallExistsVisitor>::visit(&guard, symbol_table)?;
-                }
-            }
-            Statement::Allocate(_, _) => {}
-        }
-
-        Ok(true)
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct Guard {
     pub guard: Option<Box<Expr>>,
     pub statements: Vec<Box<Statement>>,
     pub continuation: Continuation,
-}
-
-impl CheckIfFunctionCallExistsVisitor for Guard {
-    fn visit(&self, symbol_table: &SymbolTable) -> Result<bool> {
-        if let Some(expr) = &self.guard {
-            <Expr as CheckIfFunctionCallExistsVisitor>::visit(&expr, symbol_table)?;
-        }
-
-        for stmt in &self.statements {
-            <Statement as CheckIfFunctionCallExistsVisitor>::visit(&stmt, symbol_table)?;
-        }
-
-        Ok(true)
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -321,30 +272,6 @@ pub enum Expr {
     // >=, ==
     Dual(Opcode, Box<Term>, Box<Term>),
     Single(Box<Term>),
-}
-
-impl CheckIfFunctionCallExistsVisitor for Expr {
-    fn visit(&self, symbol_table: &SymbolTable) -> Result<bool> {
-        match &*self {
-            Expr::Chained(_, term, expr) => {
-                <Term as CheckIfFunctionCallExistsVisitor>::visit(&term, symbol_table)?;
-                <Expr as CheckIfFunctionCallExistsVisitor>::visit(&expr, symbol_table)?;
-            }
-            Expr::Unchained(_, term) => {
-                <Term as CheckIfFunctionCallExistsVisitor>::visit(&term, symbol_table)?;
-            }
-            Expr::Dual(_, term1, term2) => {
-                <Term as CheckIfFunctionCallExistsVisitor>::visit(&term1, symbol_table)?;
-                <Term as CheckIfFunctionCallExistsVisitor>::visit(&term2, symbol_table)?;
-            }
-            Expr::Single(term) => {
-                <Term as CheckIfFunctionCallExistsVisitor>::visit(&term, symbol_table)?;
-            }
-            _ => {}
-        }
-
-        Ok(true)
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -368,23 +295,4 @@ pub enum Term {
     Id(IdTy),
     Object(IdTy, IdTy),
     Call(IdTy, Vec<Box<Expr>>),
-}
-
-impl CheckIfFunctionCallExistsVisitor for Term {
-    fn visit(&self, symbol_table: &SymbolTable) -> Result<bool> {
-        match &*self {
-            Term::Call(id, exprs) => {
-                if !symbol_table.lookup_symbol(&id.get_name()) {
-                    bail!("Function {} is not defined", id);
-                }
-
-                for expr in exprs {
-                    expr.visit(symbol_table)?;
-                }
-            }
-            _ => {}
-        }
-
-        Ok(true)
-    }
 }

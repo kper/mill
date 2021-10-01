@@ -5,16 +5,19 @@ use inkwell::values::{BasicValueEnum};
 use std::borrow::Cow;
 
 mod print_visitor;
+mod check_if_function_call_exists;
 
 pub use crate::visitors::print_visitor::*;
+pub use crate::visitors::check_if_function_call_exists::*;
 
+/* 
 pub trait CheckIfFunctionCallExistsVisitor {
     fn lookup(functions: &SymbolTable, name: &IdTy) -> bool {
         functions.lookup_symbol(name.get_name())
     }
 
     fn visit(&self, functions: &SymbolTable) -> Result<bool>;
-}
+}*/
 
 pub trait CodegenVisitor<'ctx> {
     fn visit_program(&mut self, program: &'ctx mut Program) -> Result<()>;
@@ -37,6 +40,3 @@ pub trait Visitor {
     fn visit_struct<'ctx>(&mut self, stru: &'ctx Struct) -> Result<()>;
 }
 
-pub trait AbstractNode {
-    fn accept(&mut self, visitor: &mut impl Visitor);
-}
