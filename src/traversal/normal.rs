@@ -24,7 +24,7 @@ impl Traversal for NormalTraversal {
                     if let Some(expr_or_guard) = expr_or_guard {
                         match expr_or_guard {
                             Either::Left(expr) => {
-                                recur_expr(expr, visitor);
+                                recur_expr(expr, visitor)?;
 
                                 visitor.visit_expr(expr)?;
                             }

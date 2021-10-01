@@ -14,8 +14,7 @@ pub struct CheckIfFunctionCallExistsVisitor {
 }
 
 impl Visitor for CheckIfFunctionCallExistsVisitor {
-    fn visit_program<'ctx>(&mut self, program: &'ctx Program) -> Result<()> {
-        //println!("Visiting program");
+    fn visit_program<'ctx>(&mut self, _program: &'ctx Program) -> Result<()> {
         Ok(())
     }
 
@@ -26,25 +25,25 @@ impl Visitor for CheckIfFunctionCallExistsVisitor {
             bail!("Function {} is already defined", func.id.get_name());
         }
         else {
-            symbol_table.insert(&func.id.get_name());
+            symbol_table.insert(&func.id.get_name())?;
         }
 
         Ok(())
     }
 
-    fn visit_statement<'ctx>(&mut self, stmt: &'ctx Statement) -> Result<()> {
+    fn visit_statement<'ctx>(&mut self, _stmt: &'ctx Statement) -> Result<()> {
         //println!("Visiting statement");
         Ok(())
     }
     
     //fn visit_guard(&mut self, label: &Option<IdTy>, guard: &mut Guard) -> Result<()>;
 
-    fn visit_guard<'ctx>(&mut self, guard: &'ctx Guard) -> Result<()> {
+    fn visit_guard<'ctx>(&mut self, _guard: &'ctx Guard) -> Result<()> {
         //println!("Visiting guard");
         Ok(())
     }
 
-    fn visit_expr<'ctx>(&mut self, expr: &'ctx Expr) -> Result<()> {
+    fn visit_expr<'ctx>(&mut self, _expr: &'ctx Expr) -> Result<()> {
         //println!("Visiting expr");
         Ok(())
     }
@@ -52,7 +51,11 @@ impl Visitor for CheckIfFunctionCallExistsVisitor {
     fn visit_term<'ctx>(&mut self, term: &'ctx Term) -> Result<()> {
         let symbol_table = &self.symbol_table;
         match term {
-            Term::Call(id, exprs) => {
+            Term::Call(id, _exprs) => {
+                // It is also possible that another function call is nested in `_exprs`
+                // but we can ignore it here, because it is the responsibility of the
+                // Traversal to ensure the visiting.
+
                 if !symbol_table.lookup_symbol(&id.get_name()) {
                     bail!("Function {} is not defined", id);
                 }
@@ -63,7 +66,7 @@ impl Visitor for CheckIfFunctionCallExistsVisitor {
         Ok(())
     }
 
-    fn visit_struct<'ctx>(&mut self, stru: &'ctx Struct) -> Result<()> {
+    fn visit_struct<'ctx>(&mut self, _stru: &'ctx Struct) -> Result<()> {
         //println!("Visiting struct");
         Ok(())
     }

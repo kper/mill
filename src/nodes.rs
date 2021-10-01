@@ -1,48 +1,49 @@
 use crate::visitors::*; 
 use crate::ast::*;
+use anyhow::Result;
 
 pub trait AbstractNode {
-    fn accept(&mut self, visitor: &mut impl Visitor);
+    fn accept(&mut self, visitor: &mut impl Visitor) -> Result<()>;
 }
 
 impl AbstractNode for Program {
-    fn accept(&mut self, visitor: &mut impl Visitor) {
-        visitor.visit_program(self);
+    fn accept(&mut self, visitor: &mut impl Visitor) -> Result<()> {
+        visitor.visit_program(self)
     }
 }
 
 impl AbstractNode for Func {
-    fn accept(&mut self, visitor: &mut impl Visitor) {
-        visitor.visit_func(self);
+    fn accept(&mut self, visitor: &mut impl Visitor) -> Result<()> {
+        visitor.visit_func(self)
     }
 }
 
 impl AbstractNode for Statement {
-    fn accept(&mut self, visitor: &mut impl Visitor) {
-        visitor.visit_statement(self);
+    fn accept(&mut self, visitor: &mut impl Visitor) -> Result<()> {
+        visitor.visit_statement(self)
     }
 }
 
 impl AbstractNode for Guard {
-    fn accept(&mut self, visitor: &mut impl Visitor) {
-        visitor.visit_guard(self);
+    fn accept(&mut self, visitor: &mut impl Visitor) -> Result<()> {
+        visitor.visit_guard(self)
     }
 }
 
 impl AbstractNode for Expr {
-    fn accept(&mut self, visitor: &mut impl Visitor) {
-        visitor.visit_expr(self);
+    fn accept(&mut self, visitor: &mut impl Visitor) -> Result<()> {
+        visitor.visit_expr(self)
     }
 }
 
 impl AbstractNode for Term {
-    fn accept(&mut self, visitor: &mut impl Visitor) {
-        visitor.visit_term(self);
+    fn accept(&mut self, visitor: &mut impl Visitor) -> Result<()> {
+        visitor.visit_term(self)
     }
 }
 
 impl AbstractNode for Struct {
-    fn accept(&mut self, visitor: &mut impl Visitor) {
-        visitor.visit_struct(self);
+    fn accept(&mut self, visitor: &mut impl Visitor) -> Result<()> {
+        visitor.visit_struct(self)
     }
 }

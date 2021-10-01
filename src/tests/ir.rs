@@ -1,9 +1,6 @@
 use crate::grammar;
 use insta::assert_snapshot;
-use crate::visitors::CheckIfFunctionCallExistsVisitor;
-use crate::runner::Runner;
-use crate::pass::Pass;
-use crate::traversal::NormalTraversal;
+use crate::tests::prelude::*;
 
 fn init() {
     let _ = env_logger::builder().is_test(true).try_init();
