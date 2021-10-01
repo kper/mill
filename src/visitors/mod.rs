@@ -4,10 +4,9 @@ use anyhow::Result;
 use inkwell::values::{BasicValueEnum};
 use std::borrow::Cow;
 
-mod nodes;
-mod r#impl;
+mod print_visitor;
 
-pub use crate::visitors::r#impl::*;
+pub use crate::visitors::print_visitor::*;
 
 pub trait CheckIfFunctionCallExistsVisitor {
     fn lookup(functions: &SymbolTable, name: &IdTy) -> bool {
@@ -36,10 +35,6 @@ pub trait Visitor {
     fn visit_expr<'ctx>(&mut self, expr: &'ctx  Expr) -> Result<()>;
     fn visit_term<'ctx>(&mut self, term: &'ctx Term) -> Result<()>;
     fn visit_struct<'ctx>(&mut self, stru: &'ctx Struct) -> Result<()>;
-}
-
-pub trait Traversal {
-    fn traverse(&mut self, visitor: &mut Box<dyn Visitor>, program: &mut Program) -> Result<()>;
 }
 
 pub trait AbstractNode {

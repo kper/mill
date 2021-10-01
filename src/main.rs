@@ -10,9 +10,16 @@ mod ast;
 mod codegen;
 mod symbol_table;
 mod visitors;
+mod traversal;
+mod pass;
+mod runner;
+mod nodes;
 
 use visitors::*;
-use ast::{Pass, Runner};
+use pass::Pass;
+use runner::Runner;
+
+use crate::traversal::NormalTraversal;
 
 use log::info;
 

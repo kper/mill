@@ -8,7 +8,7 @@ use anyhow::{bail, Result};
 use std::collections::HashSet;
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use crate::Traversal;
+use crate::traversal::Traversal;
 
 pub type IdTy = Identifier;
 
@@ -181,55 +181,6 @@ impl Program {
         Ok(codegen.get_ir())
     }
 }
-
-pub struct Pass {
-    visitor: Box<dyn Visitor>,
-    traversal: Box<dyn Traversal>,
-}
-
-impl Pass
-{
-    pub fn new(visitor: Box<dyn Visitor>, traversal: Box<dyn Traversal>) -> Self {
-        Self {
-            visitor,
-            traversal
-        }
-    }
-
-    pub fn run(&mut self, program: &mut Program,) -> Result<()> {
-        self.traversal.traverse(&mut self.visitor, program)?;
-
-        Ok(())
-    }
-}
-
-pub struct Runner;
-
-impl Runner {
-    /**
-     * Run the visitors
-     */
-    pub fn run_visitors(&mut self, passes: Vec<Pass>, program: &mut Program) -> Result<()> {
-
-        for mut pass in passes.into_iter() {
-            pass.run(program)?;
-        }
-
-        
-        Ok(())
-    }
-}
-
-/*
-impl CheckIfFunctionCallExistsVisitor for Program {
-    fn visit(&self, symbol_table: &SymbolTable) -> Result<bool> {
-        for function in &self.functions {
-            <Func as CheckIfFunctionCallExistsVisitor>::visit(function, symbol_table)?;
-        }
-
-        Ok(true)
-    }
-}*/
 
 #[derive(Debug, Clone)]
 pub struct Func {

@@ -1,6 +1,10 @@
 use crate::visitors::*; 
 use crate::ast::*;
 
+pub trait AbstractNode {
+    fn accept(&mut self, visitor: &mut impl Visitor);
+}
+
 impl AbstractNode for Program {
     fn accept(&mut self, visitor: &mut impl Visitor) {
         visitor.visit_program(self);
