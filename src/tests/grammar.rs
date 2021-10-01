@@ -1,12 +1,6 @@
 use crate::grammar;
 use lalrpop_util::ParseError;
 
-use crate::runner::Runner;
-use crate::visitors::*;
-use crate::pass::Pass;
-use crate::traversal::NormalTraversal;
-
-
 macro_rules! extract_user_error {
     ($p:expr) => {{
         match $p {
@@ -184,19 +178,7 @@ fn test_function_defined_twice() {
     );
 }
 
-#[test]
-fn test_function_calls_when_defined() {
-    use crate::visitors::CheckIfFunctionCallExistsVisitor;
 
-    let mut parsed = grammar::ProgramParser::new()
-        .parse("fn x(a: int,b: int,c: int) { return k(a, b); } fn k(a: int, b: int) { return 1; }")
-        .unwrap();
-
-    let mut runner = Runner;
-    runner.run_visitors(vec![
-        Pass::new(Box::new(CheckIfFunctionCallExistsVisitor::default()), Box::new(NormalTraversal))
-    ], &mut parsed).expect("Running visitor failed");
-}
 
 #[test]
 fn parse_struct() {
