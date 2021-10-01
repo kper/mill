@@ -1,13 +1,13 @@
 use crate::traversal::Traversal;
 use crate::ast::*;
 use anyhow::Result;
-use crate::visitors::Visitor;
+use crate::visitors::CodegenVisitorTrait;
 use either::Either;
 
-pub struct NormalTraversal;
+pub struct CodegenTraversal;
 
-impl Traversal for NormalTraversal {
-    fn traverse(&mut self, visitor: &mut Box<dyn Visitor>, program: &mut Program) -> Result<()> {
+impl CodegenTraversal {
+    pub fn traverse(&mut self, visitor: &mut impl CodegenVisitorTrait, program: &mut Program) -> Result<()> {
            visitor.visit_program(program)?;
 
             for struc in program.structs.iter() {
@@ -48,7 +48,7 @@ impl Traversal for NormalTraversal {
     }
 }
 
-fn recur_expr(expr: &Box<Expr>, visitor: &mut Box<dyn Visitor>) -> Result<()> {
+fn recur_expr(expr: &Box<Expr>, visitor: &mut impl CodegenVisitorTrait) -> Result<()> {
 
     match expr.as_ref() {
         Expr::Id(_) => {},

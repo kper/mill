@@ -1,13 +1,11 @@
 use crate::codegen::Codegen;
 use crate::symbol_table::SymbolTable;
 use crate::visitors::CodegenVisitor;
-use crate::visitors::Visitor;
 use either::Either;
 use anyhow::{bail, Result};
 use std::collections::HashSet;
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use crate::traversal::Traversal;
 
 pub type IdTy = Identifier;
 
@@ -136,22 +134,7 @@ impl Program {
         Ok(set)
     }
 
-    /// Check if any functions has a duplicated name
-    /// Returns `true` if the name already exists. Otherwise return `false`.
-    pub fn check_duplicated_names(&self) -> bool {
-        let mut set = HashSet::new();
-
-        for name in self.functions.iter().map(|w| w.id.get_name()) {
-            if set.contains(&name) {
-                return true;
-            }
-
-            set.insert(name);
-        }
-
-        return false;
-    }
-
+    /*
     pub fn codegen_to_file(&mut self, path: &str) -> Result<()> {
         use inkwell::context::Context;
 
@@ -168,7 +151,6 @@ impl Program {
     }
 
     pub fn codegen_to_ir(&mut self) -> Result<String> {
-        use inkwell::context::Context;
 
         let context = Context::create();
         let module = context.create_module("main");
@@ -178,7 +160,7 @@ impl Program {
         codegen.visit_program(self)?;
 
         Ok(codegen.get_ir())
-    }
+    }*/
 }
 
 #[derive(Debug, Clone)]

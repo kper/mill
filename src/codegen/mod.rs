@@ -4,7 +4,7 @@ use crate::visitors::CodegenVisitor;
 use std::borrow::Cow;
 use std::path::Path;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{bail, Context, Result};
 use inkwell::builder::Builder;
 use inkwell::context::Context as LLVM_Context;
 use inkwell::module::Module;
@@ -15,7 +15,7 @@ use inkwell::IntPredicate;
 use log::debug;
 
 pub struct Codegen<'ctx> {
-    context: &'ctx LLVM_Context,
+    //context: LLVM_Context,
     module: Module<'ctx>,
     builder: Builder<'ctx>,
     //execution_engine: ExecutionEngine<'ctx>,
@@ -26,16 +26,16 @@ pub struct Codegen<'ctx> {
 }
 
 impl<'ctx> Codegen<'ctx> {
-    pub fn new(context: &'ctx LLVM_Context, module: Module<'ctx>) -> Codegen<'ctx> {
+    pub fn new(module: Module<'ctx>, builder: Builder<'ctx>) -> Codegen<'ctx> {
         Target::initialize_native(&InitializationConfig::default())
             .expect("Failed to initialize native target");
 
         //let execution_engine = module.create_execution_engine().unwrap();
 
+        
         Codegen {
-            context: context,
             module,
-            builder: context.create_builder(),
+            builder,
             //execution_engine,
             symbol_table: LLVMSymbolTable::default(),
             function_table: LLVMFunctionTable::default(),
@@ -56,6 +56,7 @@ impl<'ctx> Codegen<'ctx> {
         self.module.print_to_string().to_string()
     }
 
+    /*
     pub fn get_llvm_type(&self, ty: &DataType) -> Result<BasicTypeEnum<'ctx>> {
         match ty {
             DataType::Int => {
@@ -70,10 +71,11 @@ impl<'ctx> Codegen<'ctx> {
                 return Ok(BasicTypeEnum::StructType(*ty));
             }
         }
-    }
+    }*/
 }
 
-impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
+/* 
+impl<'ctx> CodegenVisitorOld<'ctx> for Codegen<'ctx> {
     fn visit_program(&mut self, program: &'ctx mut Program) -> Result<()> {
         debug!("Visiting program");
 
@@ -602,8 +604,6 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
             }
         }
 
-        use inkwell::AddressSpace;
-
         let struct_ty = self.context.struct_type(field_types.as_slice(), false);
         /*let struct_ptr_ty = struct_ty.ptr_type(AddressSpace::Generic);
 
@@ -618,3 +618,4 @@ impl<'ctx> CodegenVisitor<'ctx> for Codegen<'ctx> {
         Ok(())
     }
 }
+*/

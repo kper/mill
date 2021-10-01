@@ -1,5 +1,5 @@
 use crate::visitors::*;
-use crate::ast::*;
+use std::any::Any;
 
 pub struct PrintVisitor;
 
