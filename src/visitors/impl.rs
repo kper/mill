@@ -5,59 +5,59 @@ use either::Either;
 pub struct PrintVisitor;
 pub struct NormalTraversal;
 
-impl<'ctx> Visitor<'ctx> for PrintVisitor{
-    fn visit_program(&mut self, program: &'ctx mut Program) -> Result<()> {
+impl Visitor for PrintVisitor{
+    fn visit_program<'ctx>(&mut self, program: &'ctx Program) -> Result<()> {
         println!("Visiting program");
         Ok(())
     }
 
-    fn visit_func(&mut self, func: &'ctx mut Func) -> Result<()> {
+    fn visit_func<'ctx>(&mut self, func: &'ctx Func) -> Result<()> {
         println!("Visiting func");
         Ok(())
     }
 
-    fn visit_statement(&mut self, stmt: &mut Statement) -> Result<()> {
+    fn visit_statement<'ctx>(&mut self, stmt: &'ctx Statement) -> Result<()> {
         println!("Visiting statement");
         Ok(())
     }
     
     //fn visit_guard(&mut self, label: &Option<IdTy>, guard: &mut Guard) -> Result<()>;
 
-    fn visit_guard(&mut self, guard: &mut Guard) -> Result<()> {
+    fn visit_guard<'ctx>(&mut self, guard: &'ctx Guard) -> Result<()> {
         println!("Visiting guard");
         Ok(())
     }
 
-    fn visit_expr(&mut self, expr: &mut Expr) -> Result<()> {
+    fn visit_expr<'ctx>(&mut self, expr: &'ctx Expr) -> Result<()> {
         println!("Visiting expr");
         Ok(())
     }
 
-    fn visit_term(&mut self, term: &mut Term) -> Result<()> {
+    fn visit_term<'ctx>(&mut self, term: &'ctx Term) -> Result<()> {
         println!("Visiting term");
         Ok(())
     }
 
-    fn visit_struct(&mut self, stru: &mut Struct) -> Result<()> {
+    fn visit_struct<'ctx>(&mut self, stru: &'ctx Struct) -> Result<()> {
         println!("Visiting struct");
         Ok(())
     }
 }
 
 impl Traversal for NormalTraversal {
-    fn traverse<'ctx>(&mut self, visitor: &mut Box<dyn Visitor<'ctx>>, program: &'ctx mut Program) -> Result<()> {
+    fn traverse(&mut self, visitor: &mut Box<dyn Visitor>, program: &mut Program) -> Result<()> {
            visitor.visit_program(program)?;
 
-            for struc in program.structs.iter_mut() {
+            for struc in program.structs.iter() {
                 visitor.visit_struct(struc)?;
             }
             
-            for function in program.functions.iter_mut() {
+            for function in program.functions.iter() {
                 visitor.visit_func(function)?;
 
-                for statement in function.statements.iter_mut() {
+                for statement in function.statements.iter() {
 
-                    let expr_or_guard = statement.get_mut_inner();
+                    let expr_or_guard = statement.get_inner();
 
                     if let Some(expr_or_guard) = expr_or_guard {
                         match expr_or_guard {
@@ -72,7 +72,7 @@ impl Traversal for NormalTraversal {
                         }
                     }
 
-                    visitor.visit_statement(statement.as_mut())?;
+                    visitor.visit_statement(statement.as_ref())?;
                     
                 }
             }

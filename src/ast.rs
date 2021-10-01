@@ -182,21 +182,21 @@ impl Program {
     }
 }
 
-pub struct Pass<'ctx> {
-    visitor: Box<dyn Visitor<'ctx>>,
+pub struct Pass {
+    visitor: Box<dyn Visitor>,
     traversal: Box<dyn Traversal>,
 }
 
-impl<'ctx> Pass <'ctx>
+impl Pass
 {
-    pub fn new(visitor: Box<dyn Visitor<'ctx>>, traversal: Box<dyn Traversal>) -> Self {
+    pub fn new(visitor: Box<dyn Visitor>, traversal: Box<dyn Traversal>) -> Self {
         Self {
             visitor,
             traversal
         }
     }
 
-    pub fn run(&mut self, program: &'ctx mut Program,) -> Result<()> {
+    pub fn run(&mut self, program: &mut Program,) -> Result<()> {
         self.traversal.traverse(&mut self.visitor, program)?;
 
         Ok(())
@@ -209,7 +209,7 @@ impl Runner {
     /**
      * Run the visitors
      */
-    pub fn run_visitors<'a>(&'a mut self, passes: Vec<Pass<'a>>, program: &'a mut Program) -> Result<()> {
+    pub fn run_visitors(&mut self, passes: Vec<Pass>, program: &mut Program) -> Result<()> {
 
         for mut pass in passes.into_iter() {
             pass.run(program)?;
@@ -286,7 +286,7 @@ pub enum Statement {
 }
 
 impl Statement {
-    pub fn get_mut_inner(&mut self) -> Option<Either<&mut Box<Expr>, &mut Vec<Box<Guard>>>> {
+    pub fn get_inner(&self) -> Option<Either<&Box<Expr>, &Vec<Box<Guard>>>> {
         match self {
             Statement::Ret(expr) => {
                 return Some(Either::Left(expr));

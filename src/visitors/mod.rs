@@ -27,21 +27,21 @@ pub trait CodegenVisitor<'ctx> {
     fn visit_struct(&mut self, mystruct: &Struct) -> Result<()>;
 }
 
-pub trait Visitor<'ctx> {
-    fn visit_program(&mut self, program: &'ctx mut Program) -> Result<()>;
-    fn visit_func(&mut self, func: &'ctx mut Func) -> Result<()>;
-    fn visit_statement(&mut self, stmt: &mut Statement) -> Result<()>;
-    //fn visit_guard(&mut self, label: &Option<IdTy>, guard: &mut Guard) -> Result<()>;
-    fn visit_guard(&mut self, guard: &mut Guard) -> Result<()>;
-    fn visit_expr(&mut self, expr: &mut Expr) -> Result<()>;
-    fn visit_term(&mut self, term: &mut Term) -> Result<()>;
-    fn visit_struct(&mut self, stru: &mut Struct) -> Result<()>;
+pub trait Visitor {
+    fn visit_program<'ctx>(&mut self, program: &'ctx Program) -> Result<()>;
+    fn visit_func<'ctx>(&mut self, func: &'ctx  Func) -> Result<()>;
+    fn visit_statement<'ctx>(&mut self, stmt: &'ctx  Statement) -> Result<()>;
+    //fn visit_guard(& self, label: &Option<IdTy>, guard: & Guard) -> Result<()>;
+    fn visit_guard<'ctx>(&mut self, guard: &'ctx  Guard) -> Result<()>;
+    fn visit_expr<'ctx>(&mut self, expr: &'ctx  Expr) -> Result<()>;
+    fn visit_term<'ctx>(&mut self, term: &'ctx Term) -> Result<()>;
+    fn visit_struct<'ctx>(&mut self, stru: &'ctx Struct) -> Result<()>;
 }
 
 pub trait Traversal {
-    fn traverse<'ctx>(&mut self, visitor: &mut Box<dyn Visitor<'ctx>>, program: &'ctx mut Program) -> Result<()>;
+    fn traverse(&mut self, visitor: &mut Box<dyn Visitor>, program: &mut Program) -> Result<()>;
 }
 
-pub trait AbstractNode<'ctx> {
-    fn accept(&'ctx mut self, visitor: &mut impl Visitor<'ctx>);
+pub trait AbstractNode {
+    fn accept(&mut self, visitor: &mut impl Visitor);
 }

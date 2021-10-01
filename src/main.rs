@@ -53,7 +53,7 @@ fn main() {
 
     info!("=> Starting codegen");
 
-    let runner = Runner;
+    let mut runner = Runner;
     if let Err(err) = runner.run_visitors(vec![
         Pass::new(Box::new(PrintVisitor), Box::new(NormalTraversal)), 
     ], &mut ast) {
