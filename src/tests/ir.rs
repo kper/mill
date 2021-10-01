@@ -1,6 +1,10 @@
 use crate::grammar;
 use insta::assert_snapshot;
 use crate::visitors::CheckIfFunctionCallExistsVisitor;
+use crate::runner::Runner;
+use crate::visitors::*;
+use crate::pass::Pass;
+use crate::traversal::NormalTraversal;
 
 fn init() {
     let _ = env_logger::builder().is_test(true).try_init();
@@ -13,9 +17,11 @@ macro_rules! compile {
         let input = $input;
 
         let mut program = grammar::ProgramParser::new().parse(&input).unwrap();
-        let functions = program.get_function_names().unwrap();
 
-        program.visit(&functions).unwrap();
+        let mut runner = Runner;
+        runner.run_visitors(vec![
+            Pass::new(Box::new(CheckIfFunctionCallExistsVisitor::default()), Box::new(NormalTraversal))
+        ], &mut program).expect("Running visitor failed");
 
         let ir = program.codegen_to_ir().unwrap();
 
