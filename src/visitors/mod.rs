@@ -30,6 +30,7 @@ pub trait CodegenVisitor<'ctx> {
 }
 
 pub trait Visitor {
+    fn get_name(&self) -> String;
     fn visit_program<'ctx>(&mut self, program: &'ctx Program) -> Result<()>;
     fn visit_func<'ctx>(&mut self, func: &'ctx  Func) -> Result<()>;
     fn visit_statement<'ctx>(&mut self, stmt: &'ctx  Statement) -> Result<()>;

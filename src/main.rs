@@ -78,7 +78,7 @@ fn main() {
 
 pub(crate) fn default_passes() -> Vec<Pass> {
     vec![
-        Pass::new(Box::new(PrintVisitor), Box::new(NormalTraversal)), 
+        //Pass::new(Box::new(PrintVisitor), Box::new(NormalTraversal)), 
         Pass::new(Box::new(CheckIfFunctionCallExistsVisitor::default()), Box::new(NormalTraversal))
     ]
 }

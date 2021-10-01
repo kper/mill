@@ -2,13 +2,9 @@ use crate::grammar;
 use insta::assert_snapshot;
 use crate::tests::prelude::*;
 
-fn init() {
-    let _ = env_logger::builder().is_test(true).try_init();
-}
-
 macro_rules! compile {
     ($input:expr) => {
-        init();
+        let _ = env_logger::builder().is_test(true).try_init();
 
         let input = $input;
 

@@ -13,10 +13,14 @@ impl Traversal for NormalTraversal {
             for struc in program.structs.iter() {
                 visitor.visit_struct(struc)?;
             }
-            
+
+            // Register all functions separetely
+            // This is necessary, because functions need not to be defined before the caller.
             for function in program.functions.iter() {
                 visitor.visit_func(function)?;
-
+            }
+            
+            for function in program.functions.iter() {
                 for statement in function.statements.iter() {
 
                     let expr_or_guard = statement.get_inner();

@@ -4,6 +4,10 @@ use crate::ast::*;
 pub struct PrintVisitor;
 
 impl Visitor for PrintVisitor{
+    fn get_name(&self) -> String {
+        "PrintVisitor".to_string()
+    }
+
     fn visit_program<'ctx>(&mut self, _program: &'ctx Program) -> Result<()> {
         println!("Visiting program");
         Ok(())
