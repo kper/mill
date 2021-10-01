@@ -9,5 +9,5 @@ fn test_function_calls_when_defined() {
         Pass::new(Box::new(CheckIfFunctionCallExistsVisitor::default()), Box::new(NormalTraversal))
     ];
 
-    let result = run_visitor!(input, passes).expect("should work");
+    let _result = run_visitor!(input, passes).expect("should work");
 }

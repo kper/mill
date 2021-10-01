@@ -2,7 +2,6 @@ use crate::grammar;
 use insta::assert_snapshot;
 use crate::visitors::CheckIfFunctionCallExistsVisitor;
 use crate::runner::Runner;
-use crate::visitors::*;
 use crate::pass::Pass;
 use crate::traversal::NormalTraversal;
 
@@ -18,10 +17,9 @@ macro_rules! compile {
 
         let mut program = grammar::ProgramParser::new().parse(&input).unwrap();
 
+        let passes = crate::default_passes();
         let mut runner = Runner;
-        runner.run_visitors(vec![
-            Pass::new(Box::new(CheckIfFunctionCallExistsVisitor::default()), Box::new(NormalTraversal))
-        ], &mut program).expect("Running visitor failed");
+        runner.run_visitors(passes, &mut program).expect("Running visitor failed");
 
         let ir = program.codegen_to_ir().unwrap();
 

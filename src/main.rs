@@ -49,21 +49,11 @@ fn main() {
 
     info!("=> Program parsed");
 
-    if ast.check_duplicated_names() {
-        panic!("Function defined multiple times");
-    }
-
-    info!("No duplicated names");
-
-    let functions = ast.get_function_names().unwrap();
-
     info!("=> Starting codegen");
 
+    let passes = default_passes();
     let mut runner = Runner;
-    if let Err(err) = runner.run_visitors(vec![
-        Pass::new(Box::new(PrintVisitor), Box::new(NormalTraversal)), 
-        Pass::new(Box::new(CheckIfFunctionCallExistsVisitor::default()), Box::new(NormalTraversal))
-    ], &mut ast) {
+    if let Err(err) = runner.run_visitors(passes, &mut ast) {
         eprintln!("ERROR: {}", err);
         err.chain()
             .skip(1)
@@ -84,4 +74,11 @@ fn main() {
     }
 
     info!("=> Finished");
+}
+
+pub(crate) fn default_passes() -> Vec<Pass> {
+    vec![
+        Pass::new(Box::new(PrintVisitor), Box::new(NormalTraversal)), 
+        Pass::new(Box::new(CheckIfFunctionCallExistsVisitor::default()), Box::new(NormalTraversal))
+    ]
 }
