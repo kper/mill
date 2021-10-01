@@ -5,6 +5,9 @@ use crate::symbol_table::SymbolTable;
 
 use anyhow::bail;
 
+/**
+Check if a called function exists and if a function is only defined once.
+*/
 #[derive(Debug, Default)]
 pub struct CheckIfFunctionCallExistsVisitor {
     symbol_table: SymbolTable
@@ -17,7 +20,15 @@ impl Visitor for CheckIfFunctionCallExistsVisitor {
     }
 
     fn visit_func<'ctx>(&mut self, func: &'ctx Func) -> Result<()> {
-        //println!("Visiting func");
+        let symbol_table = &mut self.symbol_table;
+
+        if symbol_table.lookup_symbol(&func.id.get_name()) {
+            bail!("Function {} is already defined", func.id.get_name());
+        }
+        else {
+            symbol_table.insert(&func.id.get_name());
+        }
+
         Ok(())
     }
 
