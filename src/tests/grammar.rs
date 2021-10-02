@@ -167,20 +167,6 @@ fn parse_call() {
 }
 
 #[test]
-fn test_function_defined_twice() {
-    let parsed = grammar::ProgramParser::new()
-        .parse("fn x(a: int,b: int, c: int) { return k; } fn x(a: int,b: int,c: int) { return k; }")
-        .unwrap();
-    assert_eq!(
-        true,
-        parsed.check_duplicated_names(),
-        "Function name collision was not detected."
-    );
-}
-
-
-
-#[test]
 fn parse_struct() {
     assert!(grammar::ProgramParser::new()
         .parse("struct test { }")

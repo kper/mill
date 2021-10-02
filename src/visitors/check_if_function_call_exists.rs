@@ -5,7 +5,6 @@ use crate::symbol_table::SymbolTable;
 
 use anyhow::bail;
 use log::debug;
-use std::any::Any;
 
 /**
 Check if a called function exists and if a function is only defined once.

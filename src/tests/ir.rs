@@ -8,13 +8,24 @@ macro_rules! compile {
 
         let input = $input;
 
+        // Setup LLVM
+        let context = LLVM_Context::create();
+        let module = context.create_module("main");
+        let builder = context.create_builder();
+
+        // Parse
         let mut program = grammar::ProgramParser::new().parse(&input).unwrap();
 
-        let passes = crate::default_passes();
+        // Run the visitors
+        let mut passes = crate::default_passes();
         let mut runner = Runner;
-        runner.run_visitors(passes, &mut program).expect("Running visitor failed");
+        runner.run_visitors(&mut passes, &mut program).expect("Running visitor failed");
 
-        let ir = program.codegen_to_ir().unwrap();
+        // Codegen and get IR 
+        let visitor = CodegenVisitor::new(module, builder);
+        let visitor = runner.run_codegen(visitor, CodegenTraversal, &mut program).expect("Codegen failed");
+
+        let ir = visitor.get_ir().expect("Codegen failed").expect("did not generate IR");
 
         assert_snapshot!(ir);
     };

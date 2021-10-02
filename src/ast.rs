@@ -1,4 +1,3 @@
-use crate::codegen::Codegen;
 use crate::symbol_table::SymbolTable;
 use crate::visitors::CodegenVisitor;
 use either::Either;

@@ -1,7 +1,8 @@
 pub use crate::runner::Runner;
 pub use crate::visitors::*;
 pub use crate::pass::Pass;
-pub use crate::traversal::NormalTraversal;
+pub use crate::traversal::*;
+pub use inkwell::context::Context as LLVM_Context;
 
 pub use crate::run_visitor;
 

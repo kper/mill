@@ -8,8 +8,6 @@ use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::builder::Builder;
 
-use inkwell::context::Context as LLVM_Context;
-
 use std::any::Any;
 
 pub struct CodegenVisitor<'ctx> {

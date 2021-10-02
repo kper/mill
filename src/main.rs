@@ -24,9 +24,6 @@ use crate::traversal::CodegenTraversal;
 use log::info;
 
 use inkwell::context::Context as LLVM_Context;
-
-use crate::codegen::Codegen;
-
 use anyhow::{Result, Context};
 
 #[cfg(test)]
@@ -52,7 +49,7 @@ fn main() {
         content.push_str(&file_content);
     }
 
-    let mut ast = grammar::ProgramParser::new().parse(&content).unwrap();
+    let ast = grammar::ProgramParser::new().parse(&content).unwrap();
 
     info!("=> Program parsed");
 

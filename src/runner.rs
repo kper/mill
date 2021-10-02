@@ -24,8 +24,6 @@ impl Runner {
     pub fn run_codegen<T:  CodegenVisitorTrait>(&mut self, mut visitor: T, mut traversal: CodegenTraversal, program: &mut Program) -> Result<T> {
         traversal.traverse(&mut visitor, program)?;
 
-        //visitor.write_bitcode("main.bc")?;
-
         Ok(visitor)
     }
 }

@@ -13,8 +13,6 @@ pub use crate::visitors::codegen::*;
 
 use crate::codegen::Codegen;
 
-use std::any::Any;
-
 pub trait CodegenVisitorTrait {
     fn get_name(&self) -> String;
 

@@ -2,7 +2,6 @@ use crate::ast::*;
 use crate::visitors::*;
 use crate::traversal::*;
 use anyhow::Result;
-use std::any::Any;
 
 pub struct Pass {
     visitor: Box<dyn Visitor>,
