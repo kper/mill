@@ -1,5 +1,6 @@
 use anyhow::Result;
 
+use crate::Visitor;
 use crate::visitors::CodegenVisitorTrait;
 use crate::codegen::Codegen;
 use crate::ast::*;
@@ -7,8 +8,6 @@ use crate::ast::*;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::builder::Builder;
-
-use std::any::Any;
 
 pub struct CodegenVisitor<'ctx> {
     codegen: Codegen<'ctx>
@@ -24,18 +23,9 @@ impl<'ctx> CodegenVisitor<'ctx> {
     }
 }
 
-impl<'ctx2> CodegenVisitorTrait for CodegenVisitor<'ctx2> {
+impl<'ctx2> Visitor for CodegenVisitor<'ctx2> {
     fn get_name(&self) -> String {
         "CodegenVisitor".to_string()
-    }
-
-    fn write_bitcode(&self, name: &str) -> Result<bool> {
-        self.codegen.write_bitcode(name)?;
-        Ok(true)
-    }
-
-    fn get_ir(&self) -> Result<Option<String>> {
-        Ok(Some(self.codegen.get_ir()))
     }
 
     fn visit_program(&mut self, _program: &Program) -> Result<()> {
@@ -67,4 +57,19 @@ impl<'ctx2> CodegenVisitorTrait for CodegenVisitor<'ctx2> {
     fn visit_struct(&mut self, _stru: &Struct) -> Result<()> {
         Ok(())
     }
+}
+
+impl<'ctx2> CodegenVisitorTrait for CodegenVisitor<'ctx2> {
+    
+
+    fn write_bitcode(&self, name: &str) -> Result<bool> {
+        self.codegen.write_bitcode(name)?;
+        Ok(true)
+    }
+
+    fn get_ir(&self) -> Result<Option<String>> {
+        Ok(Some(self.codegen.get_ir()))
+    }
+
+    
 }

@@ -13,7 +13,7 @@ impl Runner {
      */
     pub fn run_visitors(&mut self, passes: &mut [Pass], program: &mut Program) -> Result<()> {
 
-        for mut pass in passes.iter_mut() {
+        for pass in passes.iter_mut() {
             pass.run(program)?;
         }
 
