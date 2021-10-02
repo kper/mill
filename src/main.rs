@@ -23,10 +23,11 @@ use crate::traversal::CodegenTraversal;
 
 use log::info;
 
-use inkwell::context::Context;
 use inkwell::context::Context as LLVM_Context;
 
 use crate::codegen::Codegen;
+
+use anyhow::{Result, Context};
 
 #[cfg(test)]
 mod tests;
@@ -57,60 +58,37 @@ fn main() {
 
     info!("=> Starting codegen");
 
-    let mut passes = default_passes();
+    let result = run(ast);
 
-    
-    /* 
-    let codegen = Codegen::new(&context, module);
-    */
-
-    let context = Context::create();
-    let module = context.create_module("main");
-    let builder = context.create_builder();
-
-    //passes.push(Pass::new(Box::new(CodegenVisitor::new(module, builder)), Box::new(NormalTraversal)));
-
-    let mut runner = Runner;
-    if let Err(err) = runner.run_visitors(&mut passes, &mut ast) {
+    if let Err(err) = result {
         eprintln!("ERROR: {}", err);
         err.chain()
             .skip(1)
             .for_each(|cause| eprintln!("because: {}", cause));
         std::process::exit(1);
     }
+}
 
-    info!("=> Finished visitors");
+fn run(mut ast: ast::Program) -> Result<()> {
+    let mut passes = default_passes();
+    let context = LLVM_Context::create();
+    let module = context.create_module("main");
+    let builder = context.create_builder();
+    let mut runner = Runner;
 
-    let mut visitor = CodegenVisitor::new(module, builder);
-    let x = runner.run_codegen(visitor, CodegenTraversal, &mut ast);
-        /* 
-    if let Err(err) =
+    runner.run_visitors(&mut passes, &mut ast).context("Running visitors failed")?;
     
-        eprintln!("ERROR: {}", err);
-        err.chain()
-            .skip(1)
-            .for_each(|cause| eprintln!("because: {}", cause));
-        std::process::exit(1);
-    }*/
-
+    info!("=> Finished visitors");
+    let mut visitor = CodegenVisitor::new(module, builder);
+    let x = runner.run_codegen(visitor, CodegenTraversal, &mut ast).context("Running codegen failed")?;
     info!("=> Finished codegen");
     info!("=> Starting writing file");
 
-    /* 
-    for pass in passes {
-        let err = pass.get_visitor().write_bitcode("main.bc");
+    x.write_bitcode("main.bc")?;
 
-        if let Err(err) = err {
-                    eprintln!("ERROR: {}", err);
-                    err.chain()
-                        .skip(1)
-                        .for_each(|cause| eprintln!("because: {}", cause));
-                    std::process::exit(1);
-                }
-    }
-    */
-    
     info!("=> Finished");
+
+    Ok(())
 }
 
 pub(crate) fn default_passes() -> Vec<Pass> {
