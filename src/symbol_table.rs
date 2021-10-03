@@ -5,8 +5,7 @@ use anyhow::{bail, Result};
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use llvm_sys::prelude::LLVMTypeRef;
-use llvm_sys::prelude::LLVMBasicBlockRef;
+use llvm_sys::prelude::*;
 
 pub type Key = String;
 
@@ -85,7 +84,7 @@ impl LLVMSymbolTable {
 
 #[derive(Debug, Default)]
 pub struct LLVMFunctionTable {
-    symbols: HashMap<Key, FunctionType>,
+    symbols: HashMap<Key, LLVMValueRef>,
     counter: usize,
 }
 
@@ -94,11 +93,11 @@ impl LLVMFunctionTable {
         self.symbols.contains_key(sym)
     }
 
-    pub fn get(&self, sym: &Key) -> Option<&FunctionType> {
+    pub fn get(&self, sym: &Key) -> Option<&LLVMValueRef> {
         self.symbols.get(sym)
     }
 
-    pub fn insert(&mut self, sym: &Key, val: FunctionType) -> Result<()> {
+    pub fn insert(&mut self, sym: &Key, val: LLVMValueRef) -> Result<()> {
         if !self.lookup_symbol(sym) {
             self.symbols.insert(sym.clone(), val);
             Ok(())

@@ -28,10 +28,10 @@ impl Codegen {
     pub fn new(context: LLVMContextRef, module: LLVMModuleRef, builder: LLVMBuilderRef) -> Codegen {
 
         unsafe {
-            let module = LLVMModuleCreateWithName(c_str!("main"));
-            let builder = LLVMCreateBuilderInContext(context);
+            //let module = LLVMModuleCreateWithName(c_str!("main"));
+            //let builder = LLVMCreateBuilderInContext(context);
 
-            LLVMSetTarget(module, c_str!("x86_64-unknown-unknown-elf"));
+            LLVMSetTarget(module, c_str!("x86_64-unknown-linux-gnu"));
             /*
             Target::initialize_native(&InitializationConfig::default())
                 .expect("Failed to initialize native target");*/

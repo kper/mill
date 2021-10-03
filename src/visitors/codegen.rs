@@ -6,6 +6,12 @@ use crate::codegen::Codegen;
 use crate::ast::*;
 use log::debug;
 
+use llvm_sys::bit_writer::*;
+use llvm_sys::core::*;
+use std::ffi::CString;
+use std::ptr;
+use crate::c_str;
+
 pub struct CodegenVisitor {
 }
 
@@ -28,6 +34,27 @@ impl CodegenVisitorTrait for CodegenVisitor {
 
     fn visit_func(&mut self, func: &Func, codegen: &mut Codegen) -> Result<()> {
         debug!("{}: running visit_func", self.get_name());
+
+        let context = codegen.context.clone();
+        let module = codegen.module.clone();
+        let builder = codegen.builder.clone();
+
+        unsafe {
+            let void_type = LLVMVoidTypeInContext(context);
+            let i8_type = LLVMIntTypeInContext(context, 8);
+            let _i8_pointer_type = LLVMPointerType(i8_type, 0);
+
+            let func_type = LLVMFunctionType(void_type, ptr::null_mut(), 0, 0);
+            let func_llvm = LLVMAddFunction(module, c_str!(func.id.get_name()), func_type);
+            let block = LLVMAppendBasicBlockInContext(context, func_llvm, c_str!("method"));
+            LLVMPositionBuilderAtEnd(builder, block);
+
+            codegen.function_table.insert(&func.id.get_name(), func_llvm)?;
+
+            //let hello_world_str = LLVMBuildGlobalStringPtr(builder, c_str!("hello, world."), c_str!(""));
+
+            //LLVMBuildRetVoid(builder);
+        }
 
         //let context = codegen.get_context();
 

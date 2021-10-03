@@ -33,7 +33,7 @@ use anyhow::{Result, Context};
 #[macro_export]
 macro_rules! c_str {
     ($s:expr) => (
-        concat!($s, "\0").as_ptr() as *const i8
+        format!("{}\0", $s).as_ptr() as * const i8
     );
 }
 
