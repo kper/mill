@@ -4,44 +4,51 @@ use crate::visitors::CodegenVisitor;
 use std::borrow::Cow;
 use std::path::Path;
 
+use llvm_sys::core::*;
+
 use anyhow::{bail, Context, Result};
-use inkwell::builder::Builder;
-use inkwell::context::Context as LLVM_Context;
-use inkwell::module::Module;
-use inkwell::targets::{InitializationConfig, Target};
-use inkwell::types::BasicTypeEnum;
-use inkwell::values::{BasicValue, BasicValueEnum};
-use inkwell::IntPredicate;
 use log::debug;
 
-pub struct Codegen<'ctx> {
-    pub context: &'ctx LLVM_Context,
-    module: Module<'ctx>,
-    builder: Builder<'ctx>,
+use llvm_sys::core::*;
+use llvm_sys::prelude::*;
+use crate::c_str;
+
+pub struct Codegen {
+    pub context: LLVMContextRef,
+    module: LLVMModuleRef,
+    builder: LLVMBuilderRef,
     //execution_engine: ExecutionEngine<'ctx>,
-    symbol_table: LLVMSymbolTable<'ctx>,
-    function_table: LLVMFunctionTable<'ctx>,
-    block_table: LLVMBlockTable<'ctx>,
-    struct_table: LLVMStructTable<'ctx>,
+    symbol_table: LLVMSymbolTable,
+    function_table: LLVMFunctionTable,
+    block_table: LLVMBlockTable,
+    struct_table: LLVMStructTable,
 }
 
-impl<'ctx> Codegen<'ctx> {
-    pub fn new(context: &'ctx LLVM_Context, module: Module<'ctx>, builder: Builder<'ctx>) -> Codegen<'ctx> {
-        Target::initialize_native(&InitializationConfig::default())
-            .expect("Failed to initialize native target");
+impl Codegen {
+    pub fn new(context: LLVMContextRef, module: LLVMModuleRef, builder: LLVMBuilderRef) -> Codegen {
 
-        
-        //let execution_engine = module.create_execution_engine().unwrap();
+        unsafe {
+            let module = LLVMModuleCreateWithName(c_str!("main"));
+            let builder = LLVMCreateBuilderInContext(context);
 
-        Codegen {
-            context,
-            module,
-            builder,
-            //execution_engine,
-            symbol_table: LLVMSymbolTable::default(),
-            function_table: LLVMFunctionTable::default(),
-            block_table: LLVMBlockTable::default(),
-            struct_table: LLVMStructTable::default(),
+            LLVMSetTarget(module, c_str!("x86_64-unknown-unknown-elf"));
+            /*
+            Target::initialize_native(&InitializationConfig::default())
+                .expect("Failed to initialize native target");*/
+
+            
+            //let execution_engine = module.create_execution_engine().unwrap();
+
+            Codegen {
+                context,
+                module,
+                builder,
+                //execution_engine,
+                symbol_table: LLVMSymbolTable::default(),
+                function_table: LLVMFunctionTable::default(),
+                block_table: LLVMBlockTable::default(),
+                struct_table: LLVMStructTable::default(),
+            }
         }
     }
 
@@ -50,43 +57,8 @@ impl<'ctx> Codegen<'ctx> {
         &self.context
     }*/
 
-    pub fn get_module(&self) -> &Module<'ctx> {
-        &self.module
-    }
 
-    pub fn get_mut_module(&mut self) -> &mut Module<'ctx> {
-        &mut self.module
-    }
-
-    pub fn get_builder(&self) -> &Builder<'ctx> {
-        &self.builder
-    }
-
-    pub fn get_mut_builder(&mut self) -> &mut Builder<'ctx> {
-        &mut self.builder
-    }
-
-    pub fn get_function_table(&self) -> &LLVMFunctionTable<'ctx> {
-        &self.function_table
-    }
-
-    pub fn get_mut_function_table(&mut self) -> &mut LLVMFunctionTable<'ctx> {
-        &mut self.function_table
-    }
-
-    pub fn get_block_table(&self) -> &LLVMBlockTable<'ctx> {
-        &self.block_table
-    }
-
-    pub fn get_symtable(&self) -> &LLVMSymbolTable<'ctx> {
-        &self.symbol_table
-    }
-
-    pub fn get_mut_symtable(&mut self) -> &mut LLVMSymbolTable<'ctx> {
-        &mut self.symbol_table
-    }
-    
-
+    /*
     pub fn write_bitcode(&self, name: &str) -> Result<()> {
         let path = Path::new(name);
 
@@ -99,7 +71,6 @@ impl<'ctx> Codegen<'ctx> {
         self.module.print_to_string().to_string()
     }
 
-    /*
     pub fn get_llvm_type(&self, ty: &DataType) -> Result<BasicTypeEnum<'ctx>> {
         match ty {
             DataType::Int => {

@@ -2,13 +2,21 @@
 
 use crate::ast::{Identifier, Struct};
 use anyhow::{bail, Result};
-use inkwell::basic_block::BasicBlock;
-use inkwell::types::StructType;
-use inkwell::values::{BasicValueEnum, FunctionValue};
 use std::collections::HashMap;
 use std::collections::HashSet;
 
+use llvm_sys::prelude::LLVMTypeRef;
+use llvm_sys::prelude::LLVMBasicBlockRef;
+
 pub type Key = String;
+
+#[derive(Debug, Clone)]
+pub enum BasicValueType {
+    Int(LLVMTypeRef)
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionType(LLVMTypeRef);
 
 #[derive(Debug, Default, Clone)]
 pub struct SymbolTable {
@@ -31,17 +39,17 @@ impl SymbolTable {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct LLVMSymbolTable<'a> {
-    symbols: HashMap<Key, (Identifier, BasicValueEnum<'a>)>,
+pub struct LLVMSymbolTable {
+    symbols: HashMap<Key, (Identifier, BasicValueType)>,
     counter: usize,
 }
 
-impl<'a> LLVMSymbolTable<'a> {
+impl LLVMSymbolTable {
     pub fn lookup_symbol(&self, sym: &Key) -> bool {
         self.symbols.contains_key(sym)
     }
 
-    pub fn get(&self, sym: &Key) -> Option<&BasicValueEnum<'a>> {
+    pub fn get(&self, sym: &Key) -> Option<&BasicValueType> {
         self.symbols.get(sym).as_ref().map(|x| &x.1)
     }
 
@@ -49,11 +57,48 @@ impl<'a> LLVMSymbolTable<'a> {
         self.symbols.get(sym).as_ref().map(|x| &x.0)
     }
 
-    pub fn get_both(&self, sym: &Key) -> Option<&(Identifier, BasicValueEnum<'a>)> {
+    pub fn get_both(&self, sym: &Key) -> Option<&(Identifier, BasicValueType)> {
         self.symbols.get(sym)
     }
 
-    pub fn insert(&mut self, sym: &Key, val: (Identifier, BasicValueEnum<'a>)) -> Result<()> {
+    pub fn insert(&mut self, sym: &Key, val: (Identifier, LLVMTypeRef)) -> Result<()> {
+        if !self.lookup_symbol(sym) {
+            self.symbols.insert(sym.clone(), (val.0, BasicValueType::Int(val.1)));
+            Ok(())
+        } else {
+            bail!("Symbol {} is already defined", sym);
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.symbols.clear();
+    }
+
+    pub fn get_new_name(&mut self) -> String {
+        let val = self.counter;
+        let sval = format!("{}", val);
+        self.counter += 1;
+
+        sval
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct LLVMFunctionTable {
+    symbols: HashMap<Key, FunctionType>,
+    counter: usize,
+}
+
+impl LLVMFunctionTable {
+    pub fn lookup_symbol(&self, sym: &Key) -> bool {
+        self.symbols.contains_key(sym)
+    }
+
+    pub fn get(&self, sym: &Key) -> Option<&FunctionType> {
+        self.symbols.get(sym)
+    }
+
+    pub fn insert(&mut self, sym: &Key, val: FunctionType) -> Result<()> {
         if !self.lookup_symbol(sym) {
             self.symbols.insert(sym.clone(), val);
             Ok(())
@@ -76,21 +121,21 @@ impl<'a> LLVMSymbolTable<'a> {
 }
 
 #[derive(Debug, Default)]
-pub struct LLVMFunctionTable<'a> {
-    symbols: HashMap<Key, FunctionValue<'a>>,
+pub struct LLVMBlockTable {
+    symbols: HashMap<Key, (LLVMBasicBlockRef, LLVMBasicBlockRef)>,
     counter: usize,
 }
 
-impl<'a> LLVMFunctionTable<'a> {
+impl<'a> LLVMBlockTable {
     pub fn lookup_symbol(&self, sym: &Key) -> bool {
         self.symbols.contains_key(sym)
     }
 
-    pub fn get(&self, sym: &Key) -> Option<&FunctionValue<'a>> {
+    pub fn get(&self, sym: &Key) -> Option<&(LLVMBasicBlockRef, LLVMBasicBlockRef)> {
         self.symbols.get(sym)
     }
 
-    pub fn insert(&mut self, sym: &Key, val: FunctionValue<'a>) -> Result<()> {
+    pub fn insert(&mut self, sym: &Key, val: (LLVMBasicBlockRef, LLVMBasicBlockRef)) -> Result<()> {
         if !self.lookup_symbol(sym) {
             self.symbols.insert(sym.clone(), val);
             Ok(())
@@ -113,58 +158,21 @@ impl<'a> LLVMFunctionTable<'a> {
 }
 
 #[derive(Debug, Default)]
-pub struct LLVMBlockTable<'a> {
-    symbols: HashMap<Key, (BasicBlock<'a>, BasicBlock<'a>)>,
+pub struct LLVMStructTable {
+    symbols: HashMap<Key, (Struct, LLVMTypeRef)>,
     counter: usize,
 }
 
-impl<'a> LLVMBlockTable<'a> {
+impl LLVMStructTable {
     pub fn lookup_symbol(&self, sym: &Key) -> bool {
         self.symbols.contains_key(sym)
     }
 
-    pub fn get(&self, sym: &Key) -> Option<&(BasicBlock<'a>, BasicBlock<'a>)> {
+    pub fn get(&self, sym: &Key) -> Option<&(Struct, LLVMTypeRef)> {
         self.symbols.get(sym)
     }
 
-    pub fn insert(&mut self, sym: &Key, val: (BasicBlock<'a>, BasicBlock<'a>)) -> Result<()> {
-        if !self.lookup_symbol(sym) {
-            self.symbols.insert(sym.clone(), val);
-            Ok(())
-        } else {
-            bail!("Symbol {} is already defined", sym);
-        }
-    }
-
-    pub fn clear(&mut self) {
-        self.symbols.clear();
-    }
-
-    pub fn get_new_name(&mut self) -> String {
-        let val = self.counter;
-        let sval = format!("{}", val);
-        self.counter += 1;
-
-        sval
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct LLVMStructTable<'a> {
-    symbols: HashMap<Key, (Struct, StructType<'a>)>,
-    counter: usize,
-}
-
-impl<'a> LLVMStructTable<'a> {
-    pub fn lookup_symbol(&self, sym: &Key) -> bool {
-        self.symbols.contains_key(sym)
-    }
-
-    pub fn get(&self, sym: &Key) -> Option<&(Struct, StructType<'a>)> {
-        self.symbols.get(sym)
-    }
-
-    pub fn insert(&mut self, sym: &Key, val: (Struct, StructType<'a>)) -> Result<()> {
+    pub fn insert(&mut self, sym: &Key, val: (Struct, LLVMTypeRef)) -> Result<()> {
         if !self.lookup_symbol(sym) {
             self.symbols.insert(sym.clone(), val);
             Ok(())

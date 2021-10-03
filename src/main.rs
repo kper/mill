@@ -5,6 +5,7 @@ use std::env;
 use std::fs::File;
 use std::io::Read;
 
+
 mod ast;
 mod codegen;
 mod symbol_table;
@@ -22,11 +23,18 @@ use crate::traversal::NormalTraversal;
 use crate::traversal::CodegenTraversal;
 use crate::codegen::Codegen;
 
+use llvm_sys::core::*;
 
 use log::info;
 
-use inkwell::context::Context as LLVM_Context;
 use anyhow::{Result, Context};
+
+#[macro_export]
+macro_rules! c_str {
+    ($s:expr) => (
+        concat!($s, "\0").as_ptr() as *const i8
+    );
+}
 
 #[cfg(test)]
 mod tests;
@@ -68,41 +76,39 @@ fn main() {
     }
 }
 
-struct Arena<'ctx, T: CodegenVisitorTrait<'ctx>> {
-    visitor: T,
-    codegen: Codegen<'ctx>
-}
-
 fn run(mut ast: ast::Program) -> Result<()> {
     let mut runner = Runner;
-    let context = LLVM_Context::create();
-    let module = context.create_module("main");
-    let builder = context.create_builder();
-    let mut codegen = Codegen::new(&context, module, builder);
-    let mut visitor = CodegenVisitor::new();
-
-    let mut arena = Arena {
-        visitor: visitor,
-        codegen: codegen,
-    };
-
     let mut passes = default_passes();
 
-    runner.run_visitors(&mut passes, &mut ast).context("Running visitors failed")?;
-    
-    info!("=> Finished visitors");
+    unsafe {
+        let context = LLVMContextCreate();
+        let module = LLVMModuleCreateWithName(c_str!("main"));
+        let builder = LLVMCreateBuilderInContext(context);
 
-    let travel = CodegenTraversal;
+        let mut codegen = Codegen::new(context, module, builder);
+        let mut visitor = CodegenVisitor::new();
 
-    runner.run_codegen(arena, travel, &mut ast)
-            .context("Running codegen failed")?;
+        runner.run_visitors(&mut passes, &mut ast).context("Running visitors failed")?;
+        
+        info!("=> Finished visitors");
 
-    info!("=> Finished codegen");
-    info!("=> Starting writing file");
+        let travel = CodegenTraversal;
 
-    //x.write_bitcode("main.bc")?;
+        runner.run_codegen(&mut visitor, &mut codegen, travel, &mut ast)
+                .context("Running codegen failed")?;
 
-    info!("=> Finished");
+        LLVMDisposeBuilder(builder);
+        LLVMDisposeModule(module);
+        LLVMContextDispose(context);
+
+        info!("=> Finished codegen");
+        info!("=> Starting writing file");
+
+        //x.write_bitcode("main.bc")?;
+
+        info!("=> Finished");
+
+    }
 
     Ok(())
 }

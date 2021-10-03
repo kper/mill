@@ -4,13 +4,12 @@ use anyhow::Result;
 use crate::visitors::CodegenVisitorTrait;
 use either::Either;
 
-use inkwell::context::Context;
 use crate::codegen::Codegen;
 
 pub struct CodegenTraversal;
 
 impl CodegenTraversal {
-    pub fn traverse<'a>(&mut self, visitor: &'a mut impl CodegenVisitorTrait<'a>, program: &mut Program, codegen: &'a mut Codegen<'a>) -> Result<()> {
+    pub fn traverse(&mut self, visitor: &mut impl CodegenVisitorTrait, program: &mut Program, codegen: &mut Codegen) -> Result<()> {
 
            //let mut codegen = Codegen::new(&context);
 
@@ -55,7 +54,7 @@ impl CodegenTraversal {
     }
 }
 
-fn recur_expr<'a>(expr: &Box<Expr>, visitor: &mut impl CodegenVisitorTrait<'a>, codegen: &mut Codegen<'a>) -> Result<()> {
+fn recur_expr(expr: &Box<Expr>, visitor: &mut impl CodegenVisitorTrait, codegen: &mut Codegen) -> Result<()> {
 
     match expr.as_ref() {
         Expr::Id(_) => {},

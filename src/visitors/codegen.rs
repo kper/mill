@@ -4,14 +4,6 @@ use crate::Visitor;
 use crate::visitors::CodegenVisitorTrait;
 use crate::codegen::Codegen;
 use crate::ast::*;
-
-use inkwell::context::Context;
-use inkwell::module::Module;
-use inkwell::builder::Builder;
-
-
-use inkwell::values::{BasicValue, BasicValueEnum};
-
 use log::debug;
 
 pub struct CodegenVisitor {
@@ -24,17 +16,17 @@ impl CodegenVisitor {
     }
 }
 
-impl<'a> CodegenVisitorTrait<'a> for CodegenVisitor {
+impl CodegenVisitorTrait for CodegenVisitor {
     fn get_name(&self) -> String {
         "CodegenVisitor".to_string()
     }
 
-    fn visit_program(&mut self, _program: &Program, codegen: &mut Codegen<'a>) -> Result<()> {
+    fn visit_program(&mut self, _program: &Program, codegen: &mut Codegen) -> Result<()> {
         debug!("{}: running visit_program", self.get_name());
         Ok(())
     }
 
-    fn visit_func(&mut self, func: &Func, codegen: &mut Codegen<'a>) -> Result<()> {
+    fn visit_func(&mut self, func: &Func, codegen: &mut Codegen) -> Result<()> {
         debug!("{}: running visit_func", self.get_name());
 
         //let context = codegen.get_context();
@@ -45,6 +37,7 @@ impl<'a> CodegenVisitorTrait<'a> for CodegenVisitor {
         //let ftable = codegen.get_mut_function_table();
         //let symbol_table = codegen.get_mut_symtable();
 
+        /*
         let context = codegen.context;
         let i64_type = context.i64_type();
         let func_types = vec![i64_type.into(); func.pars.len()]; 
@@ -54,7 +47,6 @@ impl<'a> CodegenVisitorTrait<'a> for CodegenVisitor {
 
         codegen.get_mut_function_table().insert(&func.id.get_name(), function)?;
 
-        /* 
         // Basic block
 
         let basic = context.append_basic_block(function, func.id.get_name());
@@ -78,23 +70,23 @@ impl<'a> CodegenVisitorTrait<'a> for CodegenVisitor {
         Ok(())
     }
 
-    fn visit_statement(&mut self, _stmt: &Statement, codegen: &mut Codegen<'a>) -> Result<()> {
+    fn visit_statement(&mut self, _stmt: &Statement, codegen: &mut Codegen) -> Result<()> {
         Ok(())
     }
     
-    fn visit_guard(&mut self, _guard: &Guard, codegen: &mut Codegen<'a>) -> Result<()> {
+    fn visit_guard(&mut self, _guard: &Guard, codegen: &mut Codegen) -> Result<()> {
         Ok(())
     }
 
-    fn visit_expr(&mut self, _expr: &Expr, codegen: &mut Codegen<'a>) -> Result<()> {
+    fn visit_expr(&mut self, _expr: &Expr, codegen: &mut Codegen) -> Result<()> {
         Ok(())
     }
 
-    fn visit_term(&mut self, _term: &Term, codegen: &mut Codegen<'a>) -> Result<()> {
+    fn visit_term(&mut self, _term: &Term, codegen: &mut Codegen) -> Result<()> {
         Ok(())
     }
 
-    fn visit_struct(&mut self, _stru: &Struct, codegen: &mut Codegen<'a>) -> Result<()> {
+    fn visit_struct(&mut self, _stru: &Struct, codegen: &mut Codegen) -> Result<()> {
         Ok(())
     }
 
