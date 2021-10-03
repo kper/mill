@@ -4,13 +4,15 @@ use crate::Visitor;
 use crate::visitors::CodegenVisitorTrait;
 use crate::codegen::Codegen;
 use crate::ast::*;
-use log::debug;
+use log::{debug, warn};
 
 use llvm_sys::bit_writer::*;
 use llvm_sys::core::*;
 use std::ffi::CString;
 use std::ptr;
 use crate::c_str;
+
+use crate::symbol_table::*;
 
 pub struct CodegenVisitor {
 }
@@ -46,9 +48,10 @@ impl CodegenVisitorTrait for CodegenVisitor {
 
             let func_type = LLVMFunctionType(void_type, ptr::null_mut(), 0, 0);
             let func_llvm = LLVMAddFunction(module, c_str!(func.id.get_name()), func_type);
-            let block = LLVMAppendBasicBlockInContext(context, func_llvm, c_str!("method"));
+            let block = LLVMAppendBasicBlockInContext(context, func_llvm, c_str!(func.id.get_name()));
             LLVMPositionBuilderAtEnd(builder, block);
-
+            
+            codegen.block_table.insert(func.id.get_name(), block)?;
             codegen.function_table.insert(&func.id.get_name(), func_llvm)?;
 
             //let hello_world_str = LLVMBuildGlobalStringPtr(builder, c_str!("hello, world."), c_str!(""));
@@ -98,27 +101,48 @@ impl CodegenVisitorTrait for CodegenVisitor {
     }
 
     fn visit_statement(&mut self, stmt: &Statement, codegen: &mut Codegen) -> Result<()> {
+        debug!("{}: Visiting statement {:#?}", self.get_name(), stmt);
+
         //TODO add return void
-         let context = codegen.context.clone();
+        let context = codegen.context.clone();
         let module = codegen.module.clone();
         let builder = codegen.builder.clone();
 
+
         match stmt {
-            Statement::Ret(expr) => {
-                unimplemented!()
-            }
-            Statement::Assign(id, expr) => {
-                let sym_expr = codegen.symbol_table.get_last_sym(); 
+            Statement::Ret(_expr) => {
+                //unimplemented!()
 
-                if let Some((ident, ty)) = sym_expr {
-                    let ptr = ty.alloca(context, builder, id)?; 
-
-                    unsafe {
-                        unimplemented!()
-                    }
+                unsafe {
+                    // this is wrong
+                    LLVMBuildRetVoid(builder);
                 }
             }
-            _ => unimplemented!()
+            Statement::Assign(id, _expr) => {
+                let sym_expr = codegen.expr_table.get_last(); 
+
+                if let Some(value) = sym_expr {
+                    debug!("Building bit cast for {}", id.get_name());
+
+                    unsafe {
+                        let i64_ty = LLVMIntTypeInContext(codegen.context, 64);
+                        let ty = BasicValueType::Int(i64_ty);
+
+                        let _ = value.store(context, builder, id)?;
+
+                        codegen.symbol_table.insert(id.get_name(), (id.clone(), BasicValue {
+                            ty: ty.clone(),
+                            value: value.value,
+                        }))?;
+                    }
+                }
+                else {
+                    warn!("No last sym for the assignment statement");
+                }
+            }
+            _ => {
+
+            }
         }
 
         Ok(())
@@ -128,11 +152,44 @@ impl CodegenVisitorTrait for CodegenVisitor {
         Ok(())
     }
 
-    fn visit_expr(&mut self, _expr: &Expr, codegen: &mut Codegen) -> Result<()> {
+    fn visit_expr(&mut self, expr: &Expr, codegen: &mut Codegen) -> Result<()> {
+        debug!("{}: Visiting expr {:#?}", self.get_name(), expr);
+
+        match expr {
+            Expr::Single(_term) => {
+                // do nothing
+            }
+            Expr::Num(num) => {
+                unsafe {
+                    let i64_ty = LLVMIntTypeInContext(codegen.context, 64);
+                    let value = LLVMConstInt(i64_ty, *num as u64, 0);
+                    codegen.expr_table.push(value, BasicValueType::Int(i64_ty))?;
+                }
+            }
+            _ => {
+                unimplemented!()
+            }
+        }
+
         Ok(())
     }
 
-    fn visit_term(&mut self, _term: &Term, codegen: &mut Codegen) -> Result<()> {
+    fn visit_term(&mut self, term: &Term, codegen: &mut Codegen) -> Result<()> {
+        debug!("{}: Visiting term {:#?}", self.get_name(), term);
+
+        match term {
+            Term::Num(num) => {
+                unsafe {
+                    let i64_ty = LLVMIntTypeInContext(codegen.context, 64);
+                    let value = LLVMConstInt(i64_ty, *num as u64, 0);
+                    codegen.expr_table.push(value, BasicValueType::Int(i64_ty))?;
+                }
+            }
+            _ => {
+                unimplemented!();
+            }
+        }
+        
         Ok(())
     }
 

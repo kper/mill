@@ -22,6 +22,7 @@ pub struct Codegen {
     pub function_table: LLVMFunctionTable,
     pub block_table: LLVMBlockTable,
     pub struct_table: LLVMStructTable,
+    pub expr_table: LLVMExprTable,
 }
 
 impl Codegen {
@@ -48,6 +49,7 @@ impl Codegen {
                 function_table: LLVMFunctionTable::default(),
                 block_table: LLVMBlockTable::default(),
                 struct_table: LLVMStructTable::default(),
+                expr_table: LLVMExprTable::default(),
             }
         }
     }

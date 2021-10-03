@@ -4,27 +4,73 @@ use crate::ast::{Identifier, Struct};
 use anyhow::{bail, Result};
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::collections::VecDeque;
 
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
 use crate::c_str;
-use crate::codegen::Codegen;
 
 pub type Key = String;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum BasicValueType {
-    Int(LLVMTypeRef)
+    Int(LLVMTypeRef),
+    Pointer,
+}
+
+#[derive(Debug, Clone)]
+pub struct BasicValue {
+    pub ty: BasicValueType,
+    pub value: LLVMValueRef
+}
+
+impl BasicValue {
+    pub fn load(&self, _context: LLVMContextRef, builder: LLVMBuilderRef, id: &Identifier) -> Result<LLVMValueRef> {
+        if matches!(self.ty, BasicValueType::Pointer) {
+            unsafe {
+                let ptr = LLVMBuildLoad(builder, self.value, c_str!(id.get_name()));
+
+                return Ok(ptr);
+            }
+        }
+        else {
+            bail!("Loaded value has to be a pointer");
+        }
+    }
+
+    pub fn store(&self, context: LLVMContextRef, builder: LLVMBuilderRef, id: &Identifier) -> Result<LLVMValueRef> {
+        let ptr = self.ty.alloca(context, builder, id)?;
+
+        unsafe {
+            let res = LLVMBuildStore(builder, self.value, ptr.value);
+
+            return Ok(res);
+        }
+    }
 }
 
 impl BasicValueType {
-    pub fn alloca(&self, context: LLVMContextRef, builder: LLVMBuilderRef, id: &Identifier) -> Result<LLVMValueRef> {
+    pub fn alloca(&self, context: LLVMContextRef, builder: LLVMBuilderRef, id: &Identifier) -> Result<BasicValue> {
         unsafe {
             let ty = match &self {
-                _ => LLVMIntTypeInContext(context, 8),
+                BasicValueType::Int(_) => LLVMIntTypeInContext(context, 64),
+                BasicValueType::Pointer => bail!("Cannot alloca a pointer"),
             };
 
-            Ok(LLVMBuildAlloca(builder, ty, c_str!(id)))
+            let value_ref = LLVMBuildAlloca(builder, ty, c_str!(id));
+            let value = BasicValue {
+                ty: BasicValueType::Pointer,
+                value: value_ref
+            };
+
+            Ok(value)
+        }
+    }
+
+    pub fn get_ty(&self) -> LLVMTypeRef {
+        match &self {
+            BasicValueType::Int(x) => x.clone(),
+            BasicValueType::Pointer => panic!("Cannot get ty of a pointer"),
         }
     }
 }
@@ -52,18 +98,58 @@ impl SymbolTable {
     }
 }
 
+/**
+ * Keeps the information for a statement in a stack.
+ */
+#[derive(Debug, Default, Clone)]
+pub struct LLVMExprTable {
+    stack: VecDeque<BasicValue>,
+}
+
+impl LLVMExprTable {
+    /**
+     * Get the last LLVMValue from the stack.
+     */
+    pub fn get_last(&mut self) -> Option<BasicValue> {
+        self.stack.pop_front()
+    }
+
+    /**
+     * Clears all values from the stack.
+     */
+    pub fn clear(&mut self) -> Result<()> {
+        self.stack.clear();
+
+        Ok(())
+    }
+
+    /**
+     * Add a value to the back.
+     */
+    pub fn push(&mut self, value: LLVMValueRef, ty: BasicValueType) -> Result<()> {
+        self.stack.push_back(BasicValue {
+            value,
+            ty
+        });
+
+        Ok(())
+    }
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct LLVMSymbolTable {
-    symbols: HashMap<Key, (Identifier, BasicValueType)>,
+    symbols: HashMap<Key, (Identifier, BasicValue)>,
     counter: usize,
 }
+
+
 
 impl LLVMSymbolTable {
     pub fn lookup_symbol(&self, sym: &Key) -> bool {
         self.symbols.contains_key(sym)
     }
 
-    pub fn get(&self, sym: &Key) -> Option<&BasicValueType> {
+    pub fn get(&self, sym: &Key) -> Option<&BasicValue> {
         self.symbols.get(sym).as_ref().map(|x| &x.1)
     }
 
@@ -71,13 +157,13 @@ impl LLVMSymbolTable {
         self.symbols.get(sym).as_ref().map(|x| &x.0)
     }
 
-    pub fn get_both(&self, sym: &Key) -> Option<&(Identifier, BasicValueType)> {
+    pub fn get_both(&self, sym: &Key) -> Option<&(Identifier, BasicValue)> {
         self.symbols.get(sym)
     }
 
-    pub fn insert(&mut self, sym: &Key, val: (Identifier, LLVMTypeRef)) -> Result<()> {
+    pub fn insert(&mut self, sym: &Key, val: (Identifier, BasicValue)) -> Result<()> {
         if !self.lookup_symbol(sym) {
-            self.symbols.insert(sym.clone(), (val.0, BasicValueType::Int(val.1)));
+            self.symbols.insert(sym.clone(), (val.0, val.1));
             Ok(())
         } else {
             bail!("Symbol {} is already defined", sym);
@@ -88,9 +174,16 @@ impl LLVMSymbolTable {
         self.symbols.clear();
     }
 
-    pub fn get_last_sym(&self) -> Option<&(Identifier, BasicValueType)> {
+    pub fn get_last_sym(&self) -> Option<(Identifier, BasicValue)> {
         let curr = format!("{}", self.counter);
-        self.symbols.get(&curr)
+        let x = self.symbols.get(&curr).clone();
+
+        if let Some((id, value)) = x {
+            Some((id.clone(), value.clone()))
+        }
+        else {
+            None
+        }
     }
 
     pub fn get_new_name(&mut self) -> String {
@@ -141,7 +234,7 @@ impl LLVMFunctionTable {
 
 #[derive(Debug, Default)]
 pub struct LLVMBlockTable {
-    symbols: HashMap<Key, (LLVMBasicBlockRef, LLVMBasicBlockRef)>,
+    symbols: HashMap<Key, (LLVMBasicBlockRef)>,
     counter: usize,
 }
 
@@ -150,11 +243,11 @@ impl<'a> LLVMBlockTable {
         self.symbols.contains_key(sym)
     }
 
-    pub fn get(&self, sym: &Key) -> Option<&(LLVMBasicBlockRef, LLVMBasicBlockRef)> {
+    pub fn get(&self, sym: &Key) -> Option<&(LLVMBasicBlockRef)> {
         self.symbols.get(sym)
     }
 
-    pub fn insert(&mut self, sym: &Key, val: (LLVMBasicBlockRef, LLVMBasicBlockRef)) -> Result<()> {
+    pub fn insert(&mut self, sym: &Key, val: (LLVMBasicBlockRef)) -> Result<()> {
         if !self.lookup_symbol(sym) {
             self.symbols.insert(sym.clone(), val);
             Ok(())
