@@ -20,6 +20,8 @@ use runner::Runner;
 
 use crate::traversal::NormalTraversal;
 use crate::traversal::CodegenTraversal;
+use crate::codegen::Codegen;
+
 
 use log::info;
 
@@ -66,22 +68,39 @@ fn main() {
     }
 }
 
+struct Arena<'ctx, T: CodegenVisitorTrait<'ctx>> {
+    visitor: T,
+    codegen: Codegen<'ctx>
+}
+
 fn run(mut ast: ast::Program) -> Result<()> {
-    let mut passes = default_passes();
-    let context = LLVM_Context::create();
-   
     let mut runner = Runner;
+    let context = LLVM_Context::create();
+    let module = context.create_module("main");
+    let builder = context.create_builder();
+    let mut codegen = Codegen::new(&context, module, builder);
+    let mut visitor = CodegenVisitor::new();
+
+    let mut arena = Arena {
+        visitor: visitor,
+        codegen: codegen,
+    };
+
+    let mut passes = default_passes();
 
     runner.run_visitors(&mut passes, &mut ast).context("Running visitors failed")?;
     
     info!("=> Finished visitors");
 
-    let mut visitor = CodegenVisitor::new();
-    let x = runner.run_codegen(visitor, CodegenTraversal, &mut ast, &context).context("Running codegen failed")?;
+    let travel = CodegenTraversal;
+
+    runner.run_codegen(arena, travel, &mut ast)
+            .context("Running codegen failed")?;
+
     info!("=> Finished codegen");
     info!("=> Starting writing file");
 
-    x.write_bitcode("main.bc")?;
+    //x.write_bitcode("main.bc")?;
 
     info!("=> Finished");
 

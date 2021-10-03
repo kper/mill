@@ -24,17 +24,17 @@ impl CodegenVisitor {
     }
 }
 
-impl CodegenVisitorTrait for CodegenVisitor {
+impl<'a> CodegenVisitorTrait<'a> for CodegenVisitor {
     fn get_name(&self) -> String {
         "CodegenVisitor".to_string()
     }
 
-    fn visit_program<'a>(&mut self, _program: &Program, codegen: &'a mut Codegen<'a>, context: &'a Context) -> Result<()> {
+    fn visit_program(&mut self, _program: &Program, codegen: &mut Codegen<'a>) -> Result<()> {
         debug!("{}: running visit_program", self.get_name());
         Ok(())
     }
 
-    fn visit_func<'a>(&mut self, func: &Func, codegen: &'a mut Codegen<'a>, context: &'a Context) -> Result<()> {
+    fn visit_func(&mut self, func: &Func, codegen: &mut Codegen<'a>) -> Result<()> {
         debug!("{}: running visit_func", self.get_name());
 
         //let context = codegen.get_context();
@@ -45,6 +45,7 @@ impl CodegenVisitorTrait for CodegenVisitor {
         //let ftable = codegen.get_mut_function_table();
         //let symbol_table = codegen.get_mut_symtable();
 
+        let context = codegen.context;
         let i64_type = context.i64_type();
         let func_types = vec![i64_type.into(); func.pars.len()]; 
         let fn_type = i64_type.fn_type(&func_types, false);
@@ -77,25 +78,23 @@ impl CodegenVisitorTrait for CodegenVisitor {
         Ok(())
     }
 
-    fn visit_statement<'a>(&mut self, _stmt: &Statement, codegen: &'a mut Codegen<'a>, context: &'a Context) -> Result<()> {
+    fn visit_statement(&mut self, _stmt: &Statement, codegen: &mut Codegen<'a>) -> Result<()> {
         Ok(())
     }
     
-    //fn visit_guard(&mut self, label: &Option<IdTy>, guard: &mut Guard) -> Result<()>;
-
-    fn visit_guard<'a>(&mut self, _guard: &Guard, codegen: &'a mut Codegen<'a>, context: &'a Context) -> Result<()> {
+    fn visit_guard(&mut self, _guard: &Guard, codegen: &mut Codegen<'a>) -> Result<()> {
         Ok(())
     }
 
-    fn visit_expr<'a>(&mut self, _expr: &Expr, codegen: &'a mut Codegen<'a>, context: &'a Context) -> Result<()> {
+    fn visit_expr(&mut self, _expr: &Expr, codegen: &mut Codegen<'a>) -> Result<()> {
         Ok(())
     }
 
-    fn visit_term<'a>(&mut self, _term: &Term, codegen: &'a mut Codegen<'a>, context: &'a Context) -> Result<()> {
+    fn visit_term(&mut self, _term: &Term, codegen: &mut Codegen<'a>) -> Result<()> {
         Ok(())
     }
 
-    fn visit_struct<'a>(&mut self, _stru: &Struct, codegen: &'a mut Codegen<'a>, context: &'a Context) -> Result<()> {
+    fn visit_struct(&mut self, _stru: &Struct, codegen: &mut Codegen<'a>) -> Result<()> {
         Ok(())
     }
 

@@ -15,7 +15,7 @@ use inkwell::IntPredicate;
 use log::debug;
 
 pub struct Codegen<'ctx> {
-    //context: &'ctx LLVM_Context,
+    pub context: &'ctx LLVM_Context,
     module: Module<'ctx>,
     builder: Builder<'ctx>,
     //execution_engine: ExecutionEngine<'ctx>,
@@ -26,18 +26,15 @@ pub struct Codegen<'ctx> {
 }
 
 impl<'ctx> Codegen<'ctx> {
-    pub fn new(context: &'ctx LLVM_Context) -> Codegen<'ctx> {
+    pub fn new(context: &'ctx LLVM_Context, module: Module<'ctx>, builder: Builder<'ctx>) -> Codegen<'ctx> {
         Target::initialize_native(&InitializationConfig::default())
             .expect("Failed to initialize native target");
 
-        let module = context.create_module("main");
-        let builder = context.create_builder();
-
+        
         //let execution_engine = module.create_execution_engine().unwrap();
 
-        
         Codegen {
-            //context,
+            context,
             module,
             builder,
             //execution_engine,

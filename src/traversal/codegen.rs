@@ -10,20 +10,20 @@ use crate::codegen::Codegen;
 pub struct CodegenTraversal;
 
 impl CodegenTraversal {
-    pub fn traverse<'a>(&mut self, visitor: &'a mut impl CodegenVisitorTrait, program: &mut Program, context: &'a Context) -> Result<Codegen<'a>> {
+    pub fn traverse<'a>(&mut self, visitor: &'a mut impl CodegenVisitorTrait<'a>, program: &mut Program, codegen: &'a mut Codegen<'a>) -> Result<()> {
 
-           let mut codegen = Codegen::new(&context);
+           //let mut codegen = Codegen::new(&context);
 
-           visitor.visit_program(program, &mut codegen, &context)?;
+            visitor.visit_program(program, codegen)?;
 
             for struc in program.structs.iter() {
-                visitor.visit_struct(struc, &mut codegen, &context)?;
+                visitor.visit_struct(struc, codegen)?;
             }
 
             // Register all functions separetely
             // This is necessary, because functions need not to be defined before the caller.
             for function in program.functions.iter() {
-                visitor.visit_func(function, &mut codegen, &context)?;
+                visitor.visit_func(function, codegen)?;
             }
 
             
@@ -35,45 +35,45 @@ impl CodegenTraversal {
                     if let Some(expr_or_guard) = expr_or_guard {
                         match expr_or_guard {
                             Either::Left(expr) => {
-                                recur_expr(expr, visitor, &mut codegen, &context)?;
+                                recur_expr(expr, visitor, codegen)?;
 
-                                visitor.visit_expr(expr, &mut codegen, &context)?;
+                                visitor.visit_expr(expr, codegen)?;
                             }
                             Either::Right(guards) => {
                                 for guard in guards {
-                                    visitor.visit_guard(guard, &mut codegen, &context)?;
+                                    visitor.visit_guard(guard, codegen)?;
                                 } 
                             }
                         }
                     }
 
-                    visitor.visit_statement(statement.as_ref(), &mut codegen, &context)?;
+                    visitor.visit_statement(statement.as_ref(),  codegen)?;
                 }
             }
 
-        Ok(codegen)
+        Ok(())
     }
 }
 
-fn recur_expr<'a>(expr: &Box<Expr>, visitor: &'a mut impl CodegenVisitorTrait, codegen: &'a mut Codegen<'a>, context: &'a Context) -> Result<()> {
+fn recur_expr<'a>(expr: &Box<Expr>, visitor: &mut impl CodegenVisitorTrait<'a>, codegen: &mut Codegen<'a>) -> Result<()> {
 
     match expr.as_ref() {
         Expr::Id(_) => {},
         Expr::Num(_) => {},
         Expr::Struct(_) => {}
         Expr::Single(ref term) => {
-            visitor.visit_term(term, codegen, context)?;
+            visitor.visit_term(term, codegen)?;
         }
         Expr::Dual(_, ref term1, ref term2) => {
-            visitor.visit_term(term1, codegen, context)?;
-            visitor.visit_term(term2, codegen, context)?;
+            visitor.visit_term(term1, codegen)?;
+            visitor.visit_term(term2, codegen)?;
         }
         Expr::Chained(_, ref term, expr) => {
-            visitor.visit_term(term, codegen, context)?;
-            recur_expr(expr, visitor, codegen, context)?;
+            visitor.visit_term(term, codegen)?;
+            recur_expr(expr, visitor, codegen)?;
         }
         Expr::Unchained(_, ref term) => {
-            visitor.visit_term(term, codegen, context)?;
+            visitor.visit_term(term, codegen)?;
         }
     }
 
