@@ -97,7 +97,30 @@ impl CodegenVisitorTrait for CodegenVisitor {
         Ok(())
     }
 
-    fn visit_statement(&mut self, _stmt: &Statement, codegen: &mut Codegen) -> Result<()> {
+    fn visit_statement(&mut self, stmt: &Statement, codegen: &mut Codegen) -> Result<()> {
+        //TODO add return void
+         let context = codegen.context.clone();
+        let module = codegen.module.clone();
+        let builder = codegen.builder.clone();
+
+        match stmt {
+            Statement::Ret(expr) => {
+                unimplemented!()
+            }
+            Statement::Assign(id, expr) => {
+                let sym_expr = codegen.symbol_table.get_last_sym(); 
+
+                if let Some((ident, ty)) = sym_expr {
+                    let ptr = ty.alloca(context, builder, id)?; 
+
+                    unsafe {
+                        unimplemented!()
+                    }
+                }
+            }
+            _ => unimplemented!()
+        }
+
         Ok(())
     }
     

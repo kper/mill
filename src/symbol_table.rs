@@ -5,13 +5,28 @@ use anyhow::{bail, Result};
 use std::collections::HashMap;
 use std::collections::HashSet;
 
+use llvm_sys::core::*;
 use llvm_sys::prelude::*;
+use crate::c_str;
+use crate::codegen::Codegen;
 
 pub type Key = String;
 
 #[derive(Debug, Clone)]
 pub enum BasicValueType {
     Int(LLVMTypeRef)
+}
+
+impl BasicValueType {
+    pub fn alloca(&self, context: LLVMContextRef, builder: LLVMBuilderRef, id: &Identifier) -> Result<LLVMValueRef> {
+        unsafe {
+            let ty = match &self {
+                _ => LLVMIntTypeInContext(context, 8),
+            };
+
+            Ok(LLVMBuildAlloca(builder, ty, c_str!(id)))
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -71,6 +86,11 @@ impl LLVMSymbolTable {
 
     pub fn clear(&mut self) {
         self.symbols.clear();
+    }
+
+    pub fn get_last_sym(&self) -> Option<&(Identifier, BasicValueType)> {
+        let curr = format!("{}", self.counter);
+        self.symbols.get(&curr)
     }
 
     pub fn get_new_name(&mut self) -> String {
