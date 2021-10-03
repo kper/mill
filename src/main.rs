@@ -24,6 +24,7 @@ use crate::traversal::CodegenTraversal;
 use crate::codegen::Codegen;
 
 use llvm_sys::core::*;
+use llvm_sys::bit_writer::LLVMWriteBitcodeToFile;
 
 use log::info;
 
@@ -97,14 +98,17 @@ fn run(mut ast: ast::Program) -> Result<()> {
         runner.run_codegen(&mut visitor, &mut codegen, travel, &mut ast)
                 .context("Running codegen failed")?;
 
-        LLVMDisposeBuilder(builder);
-        LLVMDisposeModule(module);
-        LLVMContextDispose(context);
-
         info!("=> Finished codegen");
+
         info!("=> Starting writing file");
 
+        LLVMWriteBitcodeToFile(module, c_str!("main.bc"));
+
         //x.write_bitcode("main.bc")?;
+
+          LLVMDisposeBuilder(builder);
+        LLVMDisposeModule(module);
+        LLVMContextDispose(context);
 
         info!("=> Finished");
 

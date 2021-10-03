@@ -15,13 +15,13 @@ use crate::c_str;
 
 pub struct Codegen {
     pub context: LLVMContextRef,
-    module: LLVMModuleRef,
-    builder: LLVMBuilderRef,
+    pub module: LLVMModuleRef,
+    pub builder: LLVMBuilderRef,
     //execution_engine: ExecutionEngine<'ctx>,
-    symbol_table: LLVMSymbolTable,
-    function_table: LLVMFunctionTable,
-    block_table: LLVMBlockTable,
-    struct_table: LLVMStructTable,
+    pub symbol_table: LLVMSymbolTable,
+    pub function_table: LLVMFunctionTable,
+    pub block_table: LLVMBlockTable,
+    pub struct_table: LLVMStructTable,
 }
 
 impl Codegen {
