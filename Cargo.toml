@@ -6,7 +6,7 @@ edition = "2018"
 build = "build.rs"
 
 [dependencies]
-lalrpop-util = "0.19.4"
+lalrpop-util = "0.19.6"
 regex = "1"
 inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm10-0"] }
 insta = "1.5.3"
@@ -16,4 +16,4 @@ anyhow = "1.0"
 either = "1.6.1"
 
 [build-dependencies]
-lalrpop = "0.19.4"
+lalrpop = "0.19.6"

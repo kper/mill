@@ -15,7 +15,7 @@ use inkwell::IntPredicate;
 use log::debug;
 
 pub struct Codegen<'ctx> {
-    //context: LLVM_Context,
+    //context: &'ctx LLVM_Context,
     module: Module<'ctx>,
     builder: Builder<'ctx>,
     //execution_engine: ExecutionEngine<'ctx>,
@@ -26,14 +26,18 @@ pub struct Codegen<'ctx> {
 }
 
 impl<'ctx> Codegen<'ctx> {
-    pub fn new(module: Module<'ctx>, builder: Builder<'ctx>) -> Codegen<'ctx> {
+    pub fn new(context: &'ctx LLVM_Context) -> Codegen<'ctx> {
         Target::initialize_native(&InitializationConfig::default())
             .expect("Failed to initialize native target");
+
+        let module = context.create_module("main");
+        let builder = context.create_builder();
 
         //let execution_engine = module.create_execution_engine().unwrap();
 
         
         Codegen {
+            //context,
             module,
             builder,
             //execution_engine,
@@ -43,6 +47,48 @@ impl<'ctx> Codegen<'ctx> {
             struct_table: LLVMStructTable::default(),
         }
     }
+
+    /* 
+    pub fn get_context(&self) -> &LLVM_Context {
+        &self.context
+    }*/
+
+    pub fn get_module(&self) -> &Module<'ctx> {
+        &self.module
+    }
+
+    pub fn get_mut_module(&mut self) -> &mut Module<'ctx> {
+        &mut self.module
+    }
+
+    pub fn get_builder(&self) -> &Builder<'ctx> {
+        &self.builder
+    }
+
+    pub fn get_mut_builder(&mut self) -> &mut Builder<'ctx> {
+        &mut self.builder
+    }
+
+    pub fn get_function_table(&self) -> &LLVMFunctionTable<'ctx> {
+        &self.function_table
+    }
+
+    pub fn get_mut_function_table(&mut self) -> &mut LLVMFunctionTable<'ctx> {
+        &mut self.function_table
+    }
+
+    pub fn get_block_table(&self) -> &LLVMBlockTable<'ctx> {
+        &self.block_table
+    }
+
+    pub fn get_symtable(&self) -> &LLVMSymbolTable<'ctx> {
+        &self.symbol_table
+    }
+
+    pub fn get_mut_symtable(&mut self) -> &mut LLVMSymbolTable<'ctx> {
+        &mut self.symbol_table
+    }
+    
 
     pub fn write_bitcode(&self, name: &str) -> Result<()> {
         let path = Path::new(name);

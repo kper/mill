@@ -5,6 +5,8 @@ use anyhow::Result;
 use crate::visitors::CodegenVisitorTrait;
 use crate::traversal::CodegenTraversal;
 
+use inkwell::context::Context;
+
 pub struct Runner;
 
 impl Runner {
@@ -21,8 +23,8 @@ impl Runner {
         Ok(())
     }
 
-    pub fn run_codegen<T:  CodegenVisitorTrait>(&mut self, mut visitor: T, mut traversal: CodegenTraversal, program: &mut Program) -> Result<T> {
-        traversal.traverse(&mut visitor, program)?;
+    pub fn run_codegen<T:  CodegenVisitorTrait>(&mut self, mut visitor: T, mut traversal: CodegenTraversal, program: &mut Program, context: &Context) -> Result<T> {
+        let _ = traversal.traverse(&mut visitor, program, context)?;
 
         Ok(visitor)
     }

@@ -1,0 +1,8 @@
+---
+source: src/tests/ir.rs
+expression: ir
+
+---
+; ModuleID = 'main'
+source_filename = "main"
+

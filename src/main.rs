@@ -69,15 +69,15 @@ fn main() {
 fn run(mut ast: ast::Program) -> Result<()> {
     let mut passes = default_passes();
     let context = LLVM_Context::create();
-    let module = context.create_module("main");
-    let builder = context.create_builder();
+   
     let mut runner = Runner;
 
     runner.run_visitors(&mut passes, &mut ast).context("Running visitors failed")?;
     
     info!("=> Finished visitors");
-    let mut visitor = CodegenVisitor::new(module, builder);
-    let x = runner.run_codegen(visitor, CodegenTraversal, &mut ast).context("Running codegen failed")?;
+
+    let mut visitor = CodegenVisitor::new();
+    let x = runner.run_codegen(visitor, CodegenTraversal, &mut ast, &context).context("Running codegen failed")?;
     info!("=> Finished codegen");
     info!("=> Starting writing file");
 
