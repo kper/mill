@@ -12,14 +12,6 @@ pub use crate::visitors::codegen::*;
 use crate::codegen::Codegen;
 
 pub trait CodegenVisitorTrait {
-    fn write_bitcode(&self, _name: &str) -> Result<bool> {
-        Ok(false)
-    }
-
-    fn get_ir(&self) -> Result<Option<String>> {
-        Ok(None) 
-    }
-
     fn get_name(&self) -> String;
 
     fn visit_program(&mut self, program: &Program, codegen: &mut Codegen) -> Result<()>;

@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate lalrpop_util;
+extern crate core;
 
 use std::env;
 use std::fs::File;

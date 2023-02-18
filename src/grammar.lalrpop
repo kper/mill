@@ -103,6 +103,7 @@ pub Expr: Box<Expr> = {
 Exprs: Vec<Box<Expr>> = Comma<Expr>;
 
 BinOp: Opcode = {
+    "+" => Opcode::Add,
     "==" => Opcode::Cmp
 };
 

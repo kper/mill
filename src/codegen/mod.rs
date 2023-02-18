@@ -19,6 +19,10 @@ pub struct Codegen {
     pub expr_table: LLVMExprTable,
 }
 
+pub enum MRef {
+    Value(BasicValue),
+}
+
 impl Codegen {
     pub fn new(context: LLVMContextRef, module: LLVMModuleRef, builder: LLVMBuilderRef) -> Codegen {
         unsafe {

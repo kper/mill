@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 
 use crate::Visitor;
 use crate::visitors::CodegenVisitorTrait;
-use crate::codegen::Codegen;
+use crate::codegen::{Codegen, MRef};
 use crate::ast::*;
 use log::{debug, warn};
 
@@ -15,26 +15,24 @@ use crate::c_str;
 use crate::symbol_table::*;
 
 pub struct CodegenVisitor {
+    number_generator: usize,
 }
 
 impl CodegenVisitor {
     pub fn new() -> Self {
         Self {
+            number_generator: 0,
         }
+    }
+
+    fn generate_number(&mut self) -> usize {
+        let number = self.number_generator;
+        self.number_generator += 1;
+        number
     }
 }
 
 impl CodegenVisitorTrait for CodegenVisitor {
-    fn write_bitcode(&self, name: &str) -> Result<bool> {
-        //self.codegen.write_bitcode(name)?;
-        Ok(true)
-    }
-
-    fn get_ir(&self) -> Result<Option<String>> {
-        //Ok(Some(self.codegen.get_ir()))
-        unimplemented!()
-    }
-
     fn get_name(&self) -> String {
         "CodegenVisitor".to_string()
     }
@@ -73,9 +71,8 @@ impl CodegenVisitorTrait for CodegenVisitor {
         debug!("{}: Visiting statement {:#?}", self.get_name(), stmt);
 
         let context = codegen.context.clone();
-        let module = codegen.module.clone();
+        let _module = codegen.module.clone();
         let builder = codegen.builder.clone();
-
 
         match stmt {
             Statement::RetVoid => {
@@ -122,6 +119,7 @@ impl CodegenVisitorTrait for CodegenVisitor {
     }
 
     fn visit_expr(&mut self, expr: &Expr, codegen: &mut Codegen) -> Result<()> {
+        let builder = codegen.builder.clone();
         debug!("{}: Visiting expr {:#?}", self.get_name(), expr);
 
         match expr {
@@ -133,6 +131,23 @@ impl CodegenVisitorTrait for CodegenVisitor {
                     let i64_ty = LLVMIntTypeInContext(codegen.context, 64);
                     let value = LLVMConstInt(i64_ty, *num as u64, 0);
                     codegen.expr_table.push(value, BasicValueType::Int(i64_ty))?;
+                }
+            }
+            Expr::Dual(opcode, term1, term2) => {
+                let t2 = codegen.expr_table.get_last().with_context(|| "Cannot get the second term of the operation")?;
+                let t1 = codegen.expr_table.get_last().with_context(|| "Cannot get the first term of the operation")?;
+
+                unsafe {
+                    match opcode {
+                        Opcode::Add =>{
+                            let name = c_str!(&self.generate_number().to_string());
+                            let value = LLVMBuildAdd(builder, t1.value, t2.value, name);
+
+                            let i64_ty = LLVMIntTypeInContext(codegen.context, 64);
+                            codegen.expr_table.push(value, BasicValueType::Int(i64_ty))?;
+                        }
+                        _ => unimplemented!()
+                    }
                 }
             }
             _ => {

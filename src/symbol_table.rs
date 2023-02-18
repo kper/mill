@@ -111,7 +111,7 @@ impl LLVMExprTable {
      * Get the last LLVMValue from the stack.
      */
     pub fn get_last(&mut self) -> Option<BasicValue> {
-        self.stack.pop_front()
+        self.stack.pop_back()
     }
 
     /**
