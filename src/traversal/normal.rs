@@ -61,13 +61,6 @@ fn recur_expr(expr: &Box<Expr>, visitor: &mut Box<dyn Visitor>) -> Result<()> {
             visitor.visit_term(term1)?;
             visitor.visit_term(term2)?;
         }
-        Expr::Chained(_, ref term, expr) => {
-            visitor.visit_term(term)?;
-            recur_expr(expr, visitor)?;
-        }
-        Expr::Unchained(_, ref term) => {
-            visitor.visit_term(term)?;
-        }
     }
 
     Ok(())

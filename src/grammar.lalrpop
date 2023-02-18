@@ -107,35 +107,19 @@ pub Guard: Box<Guard> = {
 };
 
 Continuation: Continuation = {
-    "continue" => Continuation::Continue(None),
-    "break" => Continuation::Break(None),
-    "continue" <id:Id> => Continuation::Continue(Some(id)),
-    "break" <id:Id> => Continuation::Break(Some(id)),
+    "continue" => Continuation::Continue,
+    "break" => Continuation::Break,
 };
 
 pub Expr: Box<Expr> = {
-	"not" <n:Term> => Box::new(Expr::Unchained(Opcode::Not, n)),
-	"head" <n:Term> => Box::new(Expr::Unchained(Opcode::Head, n)),
-	"tail" <n:Term> => Box::new(Expr::Unchained(Opcode::Tail, n)),
-    "islist" <n:Term> => Box::new(Expr::Unchained(Opcode::IsList, n)),
-    <n1:Term> ">=" <n2:Term> => Box::new(Expr::Dual(Opcode::Geq, n1, n2)),
-    <n1:Term> "==" <n2:Term> => Box::new(Expr::Dual(Opcode::Cmp, n1, n2)),
-    "(" <n1:Term> ">=" <n2:Term> ")" => Box::new(Expr::Dual(Opcode::Geq, n1, n2)),
-    "(" <n1:Term> "==" <n2:Term> ")" => Box::new(Expr::Dual(Opcode::Cmp, n1, n2)),
-    <expr:ChainedExpr> => expr,
-};
-
-ChainedExpr: Box<Expr> = {
-    <n1:Term> <op:ExprOp> <n2:ChainedExpr> => Box::new(Expr::Chained(op, n1, n2)),
-    <n:Term> => Box::new(Expr::Single(n)),
+    <n1:Term> <op:BinOp> <n2:Term> => Box::new(Expr::Dual(op, n1, n2)),
+    "(" <n1:Term> <op:BinOp> <n2:Term> ")" => Box::new(Expr::Dual(Opcode::Geq, n1, n2)),
 };
 
 Exprs: Vec<Box<Expr>> = Comma<Expr>;
 
-ExprOp: Opcode = {
-	"+" => Opcode::Add,
-	"-" => Opcode::Sub,
-	"or" => Opcode::Or
+BinOp: Opcode = {
+    "==" => Opcode::Cmp
 };
 
 pub Term: Box<Term> = {

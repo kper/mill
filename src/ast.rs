@@ -132,34 +132,6 @@ impl Program {
 
         Ok(set)
     }
-
-    /*
-    pub fn codegen_to_file(&mut self, path: &str) -> Result<()> {
-        use inkwell::context::Context;
-
-        let context = Context::create();
-        let module = context.create_module("main");
-
-        let mut codegen = Codegen::new(&context, module);
-
-        codegen.visit_program(self)?;
-
-        codegen.write_bitcode(path)?;
-
-        Ok(())
-    }
-
-    pub fn codegen_to_ir(&mut self) -> Result<String> {
-
-        let context = Context::create();
-        let module = context.create_module("main");
-
-        let mut codegen = Codegen::new(&context, module);
-
-        codegen.visit_program(self)?;
-
-        Ok(codegen.get_ir())
-    }*/
 }
 
 #[derive(Debug, Clone)]
@@ -208,21 +180,21 @@ pub enum Statement {
 
 impl Statement {
     pub fn get_inner(&self) -> Option<Either<&Box<Expr>, &Vec<Box<Guard>>>> {
-        match self {
+        return match self {
             Statement::Ret(expr) => {
-                return Some(Either::Left(expr));
+                Some(Either::Left(expr))
             }
             Statement::Assign(_, expr) => {
-                return Some(Either::Left(expr));
+                Some(Either::Left(expr))
             }
             Statement::ReAssign(_, expr) => {
-                return Some(Either::Left(expr));
+                Some(Either::Left(expr))
             }
             Statement::Conditional(_, guards) => {
-                return Some(Either::Right(guards));
+                Some(Either::Right(guards))
             }
             Statement::Allocate(_, _) => {
-                return None;
+                None
             }
         }
     }
@@ -237,8 +209,8 @@ pub struct Guard {
 
 #[derive(Debug, Clone)]
 pub enum Continuation {
-    Continue(Option<IdTy>),
-    Break(Option<IdTy>),
+    Continue,
+    Break,
 }
 
 #[derive(Debug, Clone)]
@@ -246,11 +218,6 @@ pub enum Expr {
     Num(i32),
     Id(Identifier),
     Struct(Identifier),
-    // like addition, multiplication
-    Chained(Opcode, Box<Term>, Box<Expr>),
-    // not, head, tail, islist
-    Unchained(Opcode, Box<Term>),
-    // >=, ==
     Dual(Opcode, Box<Term>, Box<Term>),
     Single(Box<Term>),
 }
@@ -264,7 +231,6 @@ pub enum Opcode {
     Not,
     Head,
     Tail,
-    IsList,
     Or,
     Geq,
     Cmp,

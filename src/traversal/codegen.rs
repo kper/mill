@@ -10,22 +10,18 @@ pub struct CodegenTraversal;
 
 impl CodegenTraversal {
     pub fn traverse(&mut self, visitor: &mut impl CodegenVisitorTrait, program: &mut Program, codegen: &mut Codegen) -> Result<()> {
-
-           //let mut codegen = Codegen::new(&context);
-
             visitor.visit_program(program, codegen)?;
 
             for struc in program.structs.iter() {
                 visitor.visit_struct(struc, codegen)?;
             }
 
-            // Register all functions separetely
+            // Register all functions separately
             // This is necessary, because functions need not to be defined before the caller.
             for function in program.functions.iter() {
                 visitor.visit_func(function, codegen)?;
             }
 
-            
             for function in program.functions.iter() {
                 for statement in function.statements.iter() {
 
@@ -66,13 +62,6 @@ fn recur_expr(expr: &Box<Expr>, visitor: &mut impl CodegenVisitorTrait, codegen:
         Expr::Dual(_, ref term1, ref term2) => {
             visitor.visit_term(term1, codegen)?;
             visitor.visit_term(term2, codegen)?;
-        }
-        Expr::Chained(_, ref term, expr) => {
-            visitor.visit_term(term, codegen)?;
-            recur_expr(expr, visitor, codegen)?;
-        }
-        Expr::Unchained(_, ref term) => {
-            visitor.visit_term(term, codegen)?;
         }
     }
 
