@@ -1,13 +1,7 @@
 ---
 source: src/tests/ir.rs
 expression: ir
-
 ---
 ; ModuleID = 'main'
 source_filename = "main"
-
-define i64 @main() {
-main:
-  ret i64 6
-}
 

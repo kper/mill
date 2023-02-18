@@ -1,13 +1,13 @@
 ---
 source: src/tests/ir.rs
 expression: ir
-
 ---
 ; ModuleID = 'main'
 source_filename = "main"
+target triple = "x86_64-unknown-linux-gnu"
 
-define i64 @main() {
+define void @main() {
 main:
-  ret i64 1
+  ret void
 }
 

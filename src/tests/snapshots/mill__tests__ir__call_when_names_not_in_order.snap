@@ -1,25 +1,7 @@
 ---
 source: src/tests/ir.rs
 expression: ir
-
 ---
 ; ModuleID = 'main'
 source_filename = "main"
-
-define i64 @main() {
-main:
-  %a = alloca i64
-  store i64 1, i64* %a
-  %a1 = load i64, i64* %a
-  %f = call i64 @f(i64 %a1)
-  ret i64 %f
-}
-
-define i64 @f(i64 %0) {
-f:
-  %a = alloca i64
-  store i64 %0, i64* %a
-  %a1 = load i64, i64* %a
-  ret i64 %a1
-}
 

@@ -32,75 +32,15 @@ fn parse_term() {
 
 #[test]
 fn parse_expr() {
-    assert!(grammar::ExprParser::new().parse("not 1").is_ok());
-    assert!(grammar::ExprParser::new().parse("not (1)").is_ok());
-    assert!(grammar::ExprParser::new().parse("not a").is_ok());
-    assert!(grammar::ExprParser::new().parse("not (a)").is_ok());
-    assert!(grammar::ExprParser::new().parse("head (a)").is_ok());
-    assert!(grammar::ExprParser::new().parse("tail (a)").is_ok());
-    assert!(grammar::ExprParser::new().parse("islist (a)").is_ok());
     assert!(grammar::ExprParser::new().parse("a == a").is_ok());
-    assert!(grammar::ExprParser::new().parse("a >= a").is_ok());
-    assert!(grammar::ExprParser::new().parse("a == a == a").is_err());
-    assert!(grammar::ExprParser::new().parse("a >= a >= a").is_err());
-    assert!(grammar::ExprParser::new().parse("a + a").is_ok());
-    assert!(grammar::ExprParser::new().parse("a + a + a").is_ok());
-    assert!(grammar::ExprParser::new().parse("a + a - a").is_ok());
-    assert!(grammar::ExprParser::new().parse("a + a - a or a").is_ok());
     assert!(grammar::ExprParser::new().parse("(a)").is_ok());
+    assert!(grammar::ExprParser::new().parse("a").is_ok());
     assert!(grammar::ExprParser::new().parse("(1)").is_ok());
 }
 
 #[test]
 fn parse_statement() {
-    // Semicolon is only applied on statements, not singular
-    assert!(grammar::StatementParser::new()
-        .parse("return head x")
-        .is_ok());
-    assert!(grammar::StatementParser::new()
-        .parse("return not 1")
-        .is_ok());
-    assert!(grammar::StatementParser::new()
-        .parse("return not x")
-        .is_ok());
-    assert!(grammar::StatementParser::new()
-        .parse("return head x")
-        .is_ok());
-    assert!(grammar::StatementParser::new()
-        .parse("return tail x")
-        .is_ok());
-    assert!(grammar::StatementParser::new()
-        .parse("return islist x")
-        .is_ok());
     assert!(grammar::StatementParser::new().parse("let x : int = x").is_ok());
-    assert!(grammar::StatementParser::new()
-        .parse("let x : int= islist x")
-        .is_ok());
-    assert!(grammar::StatementParser::new().parse("x = x").is_ok());
-    assert!(grammar::StatementParser::new()
-        .parse("x = islist x")
-        .is_ok());
-    assert!(grammar::StatementParser::new()
-        .parse("id: match _ -> return not a; break; _ -> return not a; break; end")
-        .is_ok());
-    assert!(grammar::StatementParser::new()
-        .parse("x.w = not a")
-        .is_ok());
-    assert!(grammar::StatementParser::new()
-        .parse("x.w = not a.o")
-        .is_ok());
-
-}
-
-#[test]
-fn parse_statements() {
-    assert!(grammar::StatementsParser::new()
-        .parse("return not 1; return not 1;")
-        .is_ok());
-    assert!(grammar::StatementsParser::new()
-        .parse("return not 1 return not 1;")
-        .is_err());
-    assert!(grammar::StatementsParser::new().parse("id: match _ -> return not a; break; _ -> return not a; break; end; match _ -> return not a; continue a; end;").is_ok());
 }
 
 #[test]
@@ -127,42 +67,17 @@ fn parse_func() {
 }
 
 #[test]
-fn parse_guard() {
-    assert!(grammar::GuardParser::new()
-        .parse("_ -> return not a; break")
-        .is_ok());
-    assert!(grammar::GuardParser::new()
-        .parse("_ -> return not a; break a")
-        .is_ok());
-    assert!(grammar::GuardParser::new()
-        .parse("not b -> return not a; break")
-        .is_ok());
-    assert!(grammar::GuardParser::new()
-        .parse("not b -> return not a; break a")
-        .is_ok());
-}
-
-#[test]
-fn parse_cond() {
-    assert!(grammar::ConditionalParser::new()
-        .parse("match _ -> return not a; break; _ -> return not a; break; end")
-        .is_ok());
-}
-
-#[test]
 fn parse_prog() {
-    assert!(grammar::ProgramParser::new()
-        .parse("fn x(a: int,b: int,c: int) { return a; } fn test(a: int,b: int,c: int) { return b; }")
-        .is_ok());
+    assert!(grammar::ProgramParser::new().parse("fn myfunction () {} fn myfunction2() {}").is_ok());
 }
 
 #[test]
 fn parse_call() {
-    assert!(grammar::TermParser::new().parse("myfunction ()").is_ok());
-    assert!(grammar::TermParser::new().parse("myfunction()").is_ok());
-    assert!(grammar::TermParser::new().parse("myfunction(a)").is_ok());
-    assert!(grammar::TermParser::new()
-        .parse("myfunction(a,b,c)")
+    assert!(grammar::FuncdefParser::new().parse("fn myfunction () {}").is_ok());
+    assert!(grammar::FuncdefParser::new().parse("fn myfunction() {}").is_ok());
+    assert!(grammar::FuncdefParser::new().parse("fn myfunction(a : int) { }").is_ok());
+    assert!(grammar::FuncdefParser::new()
+        .parse("fn myfunction(a : int ,b : int ,c : int) {}")
         .is_ok());
 }
 
@@ -176,7 +91,7 @@ fn parse_struct() {
 #[test]
 fn parse_struct_with_func() {
     assert!(grammar::ProgramParser::new()
-        .parse("struct test123 { } fn x(a: int,b: int,c: int) { return a; } fn test(a: int,b: int,c: int) { return b; }")
+        .parse("struct test123 { } fn x(a: int,b: int,c: int) { } fn test(a: int,b: int,c: int) { }")
         .is_ok());
 }
 

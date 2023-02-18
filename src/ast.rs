@@ -136,15 +136,19 @@ impl Program {
 
 #[derive(Debug, Clone)]
 pub struct Func {
+    /// Name of the function
     pub id: IdTy,
+    /// Parameters of the function
     pub pars: Vec<IdTy>,
+    /// The statements of the function
     pub statements: Vec<Box<Statement>>,
-    /// Symbol table for xxx
+    /// Return type of the function. This is None when void.
+    pub ret_ty: Option<IdTy>,
     symbol_table: SymbolTable,
 }
 
 impl Func {
-    pub fn new(id: IdTy, pars: Vec<IdTy>, statements: Vec<Box<Statement>>) -> Result<Self> {
+    pub fn new(id: IdTy, pars: Vec<IdTy>, statements: Vec<Box<Statement>>, ret_ty: Option<IdTy>) -> Result<Self> {
         let mut symbol_table = SymbolTable::default();
 
         for stmt in statements.iter() {
@@ -165,6 +169,7 @@ impl Func {
             pars,
             statements,
             symbol_table,
+            ret_ty
         })
     }
 }

@@ -234,7 +234,7 @@ impl LLVMFunctionTable {
 
 #[derive(Debug, Default)]
 pub struct LLVMBlockTable {
-    symbols: HashMap<Key, (LLVMBasicBlockRef)>,
+    symbols: HashMap<Key, LLVMBasicBlockRef>,
     counter: usize,
 }
 
@@ -243,11 +243,11 @@ impl<'a> LLVMBlockTable {
         self.symbols.contains_key(sym)
     }
 
-    pub fn get(&self, sym: &Key) -> Option<&(LLVMBasicBlockRef)> {
+    pub fn get(&self, sym: &Key) -> Option<&LLVMBasicBlockRef> {
         self.symbols.get(sym)
     }
 
-    pub fn insert(&mut self, sym: &Key, val: (LLVMBasicBlockRef)) -> Result<()> {
+    pub fn insert(&mut self, sym: &Key, val: LLVMBasicBlockRef) -> Result<()> {
         if !self.lookup_symbol(sym) {
             self.symbols.insert(sym.clone(), val);
             Ok(())

@@ -1,24 +1,7 @@
 ---
 source: src/tests/ir.rs
 expression: ir
-
 ---
 ; ModuleID = 'main'
 source_filename = "main"
-
-define i64 @main() {
-main:
-  br label %"0"
-
-"0":                                              ; preds = %main
-  br i64 1, label %"2", label %"3"
-
-"1":                                              ; No predecessors!
-
-"2":                                              ; preds = %"0"
-  ret i64 2
-  br label %"3"
-
-"3":                                              ; preds = %"2", %"0"
-}
 

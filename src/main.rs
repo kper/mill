@@ -14,6 +14,7 @@ mod traversal;
 mod pass;
 mod runner;
 mod nodes;
+mod utils;
 
 use visitors::*;
 use pass::Pass;
@@ -87,7 +88,6 @@ fn run(mut ast: ast::Program) -> Result<()> {
         let builder = LLVMCreateBuilderInContext(context);
 
         let mut codegen = Codegen::new(context, module, builder);
-        let mut visitor = CodegenVisitor::new();
 
         runner.run_visitors(&mut passes, &mut ast).context("Running visitors failed")?;
         
@@ -95,7 +95,7 @@ fn run(mut ast: ast::Program) -> Result<()> {
 
         let travel = CodegenTraversal;
 
-        runner.run_codegen(&mut visitor, &mut codegen, travel, &mut ast)
+        runner.run_codegen(&mut CodegenVisitor::new(), &mut codegen, travel, &mut ast)
                 .context("Running codegen failed")?;
 
         info!("=> Finished codegen");

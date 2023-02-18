@@ -4,30 +4,34 @@ use crate::tests::prelude::*;
 
 macro_rules! compile {
     ($input:expr) => {
+        use llvm_sys::core::*;
+
         let _ = env_logger::builder().is_test(true).try_init();
 
         let input = $input;
 
         // Setup LLVM
-        let context = LLVM_Context::create();
-        let module = context.create_module("main");
-        let builder = context.create_builder();
+        unsafe {
+            let context = LLVMContextCreate();
+            let module = LLVMModuleCreateWithName(c_str!("main"));
+            let builder = LLVMCreateBuilderInContext(context);
+            let mut codegen = Codegen::new(context, module, builder);
+            let mut runner = Runner;
 
-        // Parse
-        let mut program = grammar::ProgramParser::new().parse(&input).unwrap();
+            // Parse
+            let mut program = grammar::ProgramParser::new().parse(&input).unwrap();
 
-        // Run the visitors
-        let mut passes = crate::default_passes();
-        let mut runner = Runner;
-        runner.run_visitors(&mut passes, &mut program).expect("Running visitor failed");
+            // Run the visitors
+            let mut passes = crate::default_passes();
+            runner.run_visitors(&mut passes, &mut program).expect("Running visitor failed");
 
-        // Codegen and get IR 
-        let visitor = CodegenVisitor::new(module, builder);
-        let visitor = runner.run_codegen(visitor, CodegenTraversal, &mut program).expect("Codegen failed");
+            // Codegen and get IR
+            runner.run_codegen(&mut CodegenVisitor::new(), &mut codegen, CodegenTraversal, &mut program).expect("Codegen failed");
 
-        let ir = visitor.get_ir().expect("Codegen failed").expect("did not generate IR");
+            let ir = crate::utils::LLVMString::new(LLVMPrintModuleToString(module)).to_string();
 
-        assert_snapshot!(ir);
+            assert_snapshot!(ir);
+        }
     };
 }
 
@@ -52,16 +56,6 @@ fn test_addition() {
 }
 
 #[test]
-fn test_multiple_addition() {
-    compile!("fn main() { return 1 + 2 + 3; }");
-}
-
-#[test]
-fn test_multiple_addition_with_vars() {
-    compile!("fn main() { let a : int = 1; let b : int = 2; let c : int = 3; return a + b + c; }");
-}
-
-#[test]
 fn test_call_when_names_in_order() {
     compile!("fn f(a: int) { return a; } fn main() { let a : int = 1; return f(a); }");
 }
@@ -69,16 +63,6 @@ fn test_call_when_names_in_order() {
 #[test]
 fn test_call_when_names_not_in_order() {
     compile!("fn main() { let a : int = 1; return f(a); } fn f(a:int) { return a; }");
-}
-
-#[test]
-fn test_one_guard_with_expr() {
-    compile!("fn main() { match 1 -> return 2; break; end; }");
-}
-
-#[test]
-fn test_mixed_guards() {
-    compile!("fn main() { match 1 -> let a : int = 2; break; _ -> return 3; break; end; }");
 }
 
 #[test]

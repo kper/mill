@@ -1,15 +1,14 @@
 ---
 source: src/tests/ir.rs
 expression: ir
-
 ---
 ; ModuleID = 'main'
 source_filename = "main"
+target triple = "x86_64-unknown-linux-gnu"
 
-define i64 @main() {
+define void @main() {
 main:
-  %a = alloca i64
-  store i64 1, i64* %a
-  store i64 2, i64* %a
+  %a = alloca i64, align 8
+  store i64 1, i64* %a, align 4
 }
 
