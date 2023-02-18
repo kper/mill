@@ -104,14 +104,11 @@ fn run(mut ast: ast::Program) -> Result<()> {
 
         LLVMWriteBitcodeToFile(module, c_str!("main.bc"));
 
-        //x.write_bitcode("main.bc")?;
-
-          LLVMDisposeBuilder(builder);
+        LLVMDisposeBuilder(builder);
         LLVMDisposeModule(module);
         LLVMContextDispose(context);
 
         info!("=> Finished");
-
     }
 
     Ok(())
@@ -119,7 +116,6 @@ fn run(mut ast: ast::Program) -> Result<()> {
 
 pub(crate) fn default_passes() -> Vec<Pass> {
     vec![
-        //Pass::new(Box::new(PrintVisitor), Box::new(NormalTraversal)), 
         Pass::new(Box::new(CheckIfFunctionCallExistsVisitor::default()), Box::new(NormalTraversal))
     ]
 }

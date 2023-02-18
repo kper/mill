@@ -25,6 +25,16 @@ impl CodegenVisitor {
 }
 
 impl CodegenVisitorTrait for CodegenVisitor {
+    fn write_bitcode(&self, name: &str) -> Result<bool> {
+        //self.codegen.write_bitcode(name)?;
+        Ok(true)
+    }
+
+    fn get_ir(&self) -> Result<Option<String>> {
+        //Ok(Some(self.codegen.get_ir()))
+        unimplemented!()
+    }
+
     fn get_name(&self) -> String {
         "CodegenVisitor".to_string()
     }
@@ -50,52 +60,11 @@ impl CodegenVisitorTrait for CodegenVisitor {
             let func_llvm = LLVMAddFunction(module, c_str!(func.id.get_name()), func_type);
             let block = LLVMAppendBasicBlockInContext(context, func_llvm, c_str!(func.id.get_name()));
             LLVMPositionBuilderAtEnd(builder, block);
-            
+
             codegen.block_table.insert(func.id.get_name(), block)?;
             codegen.function_table.insert(&func.id.get_name(), func_llvm)?;
 
-            //let hello_world_str = LLVMBuildGlobalStringPtr(builder, c_str!("hello, world."), c_str!(""));
-
-            //LLVMBuildRetVoid(builder);
         }
-
-        //let context = codegen.get_context();
-
-        //let builder = codegen.get_mut_builder();
-        //let module = codegen.get_mut_module();
-        //let context = codegen.get_context();
-        //let ftable = codegen.get_mut_function_table();
-        //let symbol_table = codegen.get_mut_symtable();
-
-        /*
-        let context = codegen.context;
-        let i64_type = context.i64_type();
-        let func_types = vec![i64_type.into(); func.pars.len()]; 
-        let fn_type = i64_type.fn_type(&func_types, false);
-
-        let function = codegen.get_mut_module().add_function(&func.id.get_name(), fn_type, None);
-
-        codegen.get_mut_function_table().insert(&func.id.get_name(), function)?;
-
-        // Basic block
-
-        let basic = context.append_basic_block(function, func.id.get_name());
-
-        builder.position_at_end(basic);
-
-        for (i, param) in func.pars.iter().enumerate() {
-            let value = function.get_nth_param(i as u32).unwrap();
-            let ptr = builder.build_alloca(i64_type, param.get_name());
-
-            let _instr = builder.build_store(ptr, value);
-
-            symbol_table.insert(
-                param.get_name(),
-                (param.clone(), BasicValueEnum::PointerValue(ptr)),
-            )?;
-            debug!("Allocating functions parameter {}", param);
-        }
-        */
 
         Ok(())
     }
@@ -111,15 +80,13 @@ impl CodegenVisitorTrait for CodegenVisitor {
 
         match stmt {
             Statement::Ret(_expr) => {
-                //unimplemented!()
-
                 unsafe {
                     // this is wrong
                     LLVMBuildRetVoid(builder);
                 }
             }
             Statement::Assign(id, _expr) => {
-                let sym_expr = codegen.expr_table.get_last(); 
+                let sym_expr = codegen.expr_table.get_last();
 
                 if let Some(value) = sym_expr {
                     debug!("Building bit cast for {}", id.get_name());
@@ -147,7 +114,7 @@ impl CodegenVisitorTrait for CodegenVisitor {
 
         Ok(())
     }
-    
+
     fn visit_guard(&mut self, _guard: &Guard, codegen: &mut Codegen) -> Result<()> {
         Ok(())
     }
@@ -189,21 +156,11 @@ impl CodegenVisitorTrait for CodegenVisitor {
                 unimplemented!();
             }
         }
-        
+
         Ok(())
     }
 
     fn visit_struct(&mut self, _stru: &Struct, codegen: &mut Codegen) -> Result<()> {
         Ok(())
-    }
-
-    fn write_bitcode(&self, name: &str) -> Result<bool> {
-        //self.codegen.write_bitcode(name)?;
-        Ok(true)
-    }
-
-    fn get_ir(&self) -> Result<Option<String>> {
-        //Ok(Some(self.codegen.get_ir()))
-        unimplemented!()
     }
 }
