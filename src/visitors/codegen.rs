@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use crate::Visitor;
 use crate::visitors::CodegenVisitorTrait;
@@ -72,17 +72,23 @@ impl CodegenVisitorTrait for CodegenVisitor {
     fn visit_statement(&mut self, stmt: &Statement, codegen: &mut Codegen) -> Result<()> {
         debug!("{}: Visiting statement {:#?}", self.get_name(), stmt);
 
-        //TODO add return void
         let context = codegen.context.clone();
         let module = codegen.module.clone();
         let builder = codegen.builder.clone();
 
 
         match stmt {
-            Statement::Ret(_expr) => {
+            Statement::RetVoid => {
                 unsafe {
-                    // this is wrong
                     LLVMBuildRetVoid(builder);
+                }
+            }
+            Statement::Ret(_expr) => {
+                // The traversing order will evaluate the expression before the statement.
+                let value = codegen.expr_table.get_last().with_context(|| "Failed to fetch last expression value".to_string())?;
+
+                unsafe {
+                    LLVMBuildRet(builder, value.value);
                 }
             }
             Statement::Assign(id, _expr) => {
@@ -112,10 +118,6 @@ impl CodegenVisitorTrait for CodegenVisitor {
             }
         }
 
-        Ok(())
-    }
-
-    fn visit_guard(&mut self, _guard: &Guard, codegen: &mut Codegen) -> Result<()> {
         Ok(())
     }
 

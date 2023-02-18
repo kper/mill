@@ -8,6 +8,6 @@ target triple = "x86_64-unknown-linux-gnu"
 
 define void @main() {
 main:
-  ret void
+  ret i64 1
 }
 

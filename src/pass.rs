@@ -25,12 +25,6 @@ impl Pass
         &self.visitor
     }
 
-    /* 
-    pub fn get_visitor_as_any(&self) -> Box<dyn Any> {
-        let x = self.visitor.as_ref();
-        Box::new(x)
-    }*/
-
     pub fn run(&mut self, program: &mut Program,) -> Result<()> {
         self.traversal.traverse(&mut self.visitor, program)?;
 

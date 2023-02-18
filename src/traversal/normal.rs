@@ -23,21 +23,11 @@ impl Traversal for NormalTraversal {
             for function in program.functions.iter() {
                 for statement in function.statements.iter() {
 
-                    let expr_or_guard = statement.get_inner();
+                    let expr = statement.get_inner();
 
-                    if let Some(expr_or_guard) = expr_or_guard {
-                        match expr_or_guard {
-                            Either::Left(expr) => {
-                                recur_expr(expr, visitor)?;
-
-                                visitor.visit_expr(expr)?;
-                            }
-                            Either::Right(guards) => {
-                                for guard in guards {
-                                    visitor.visit_guard(guard)?;
-                                } 
-                            }
-                        }
+                    if let Some(expr) = expr {
+                        recur_expr(expr, visitor)?;
+                        visitor.visit_expr(expr)?;
                     }
 
                     visitor.visit_statement(statement.as_ref())?;

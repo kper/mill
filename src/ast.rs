@@ -176,29 +176,29 @@ impl Func {
 
 #[derive(Debug, Clone)]
 pub enum Statement {
+    RetVoid,
     Ret(Box<Expr>),
     Assign(IdTy, Box<Expr>),
     ReAssign(IdTy, Box<Expr>),
-    Conditional(Option<IdTy>, Vec<Box<Guard>>),
     Allocate(IdTy, IdTy),
 }
 
 impl Statement {
-    pub fn get_inner(&self) -> Option<Either<&Box<Expr>, &Vec<Box<Guard>>>> {
+    pub fn get_inner(&self) -> Option<&Box<Expr>> {
         return match self {
             Statement::Ret(expr) => {
-                Some(Either::Left(expr))
+                Some(expr)
             }
             Statement::Assign(_, expr) => {
-                Some(Either::Left(expr))
+                Some(expr)
             }
             Statement::ReAssign(_, expr) => {
-                Some(Either::Left(expr))
-            }
-            Statement::Conditional(_, guards) => {
-                Some(Either::Right(guards))
+                Some(expr)
             }
             Statement::Allocate(_, _) => {
+                None
+            }
+            Statement::RetVoid => {
                 None
             }
         }
