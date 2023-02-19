@@ -4,4 +4,18 @@ expression: ir
 ---
 ; ModuleID = 'main'
 source_filename = "main"
+target triple = "x86_64-unknown-linux-gnu"
+
+define i32 @main() {
+main:
+  %a = alloca i64, align 8
+  store i64 1, i64* %a, align 4
+  %"0" = call i32 @f()
+  ret i32 %"0"
+}
+
+define i32 @f(i32 %0) {
+f:
+  ret i32 (i32)* @f
+}
 

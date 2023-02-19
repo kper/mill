@@ -72,9 +72,8 @@ fn test_call_when_names_in_order() {
 }
 
 #[test]
-#[ignore]
 fn test_call_when_names_not_in_order() {
-    compile!("fn main() { let a : int = 1; return f(a); } fn f(a:int) { return a; }");
+    compile!("fn main() -> int { let a : int = 1; return f(a); } fn f(a:int) -> int { return a; }");
 }
 
 #[test]
