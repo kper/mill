@@ -18,11 +18,11 @@ impl Visitor for CheckIfFunctionCallExistsVisitor {
         "CheckIfFunctionCallExistsVisitor".to_string()
     }
 
-    fn visit_program(&mut self, _program: &Program) -> Result<()> {
+    fn visit_program<'a>(&mut self, _ctx: Ctx<'a>, _program: &Program) -> Result<()> {
         Ok(())
     }
 
-    fn visit_func(&mut self, func: &Func) -> Result<()> {
+    fn visit_func<'a>(&mut self, _ctx: Ctx<'a>, func: &Func) -> Result<()> {
         debug!(
             "{}: Calling `visit_func` for function: {}",
             self.get_name(),
@@ -40,12 +40,11 @@ impl Visitor for CheckIfFunctionCallExistsVisitor {
         Ok(())
     }
 
-    fn visit_statement(&mut self, _stmt: &Statement) -> Result<()> {
-        //println!("Visiting statement");
+    fn visit_statement<'a>(&mut self, _ctx: Ctx<'a>, _stmt: &Statement) -> Result<()> {
         Ok(())
     }
 
-    fn visit_expr(&mut self, expr: &Expr) -> Result<()> {
+    fn visit_expr<'a>(&mut self, _ctx: Ctx<'a>, expr: &Expr) -> Result<()> {
         let symbol_table = &self.symbol_table;
         match expr {
             Expr::Call(id, _exprs) => {
@@ -68,11 +67,11 @@ impl Visitor for CheckIfFunctionCallExistsVisitor {
         Ok(())
     }
 
-    fn visit_term<'ctx>(&mut self, _term: &'ctx Term) -> Result<()> {
+    fn visit_term<'a>(&mut self, _ctx: Ctx<'a>, _term: &Term) -> Result<()> {
         Ok(())
     }
 
-    fn visit_struct<'ctx>(&mut self, _stru: &'ctx Struct) -> Result<()> {
+    fn visit_struct<'a>(&mut self, _ctx: Ctx<'a>, _stru: &Struct) -> Result<()> {
         Ok(())
     }
 }

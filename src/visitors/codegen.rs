@@ -6,9 +6,9 @@ use crate::codegen::Codegen;
 use crate::visitors::CodegenVisitorTrait;
 use log::{debug, warn};
 
-use crate::c_str;
 use llvm_sys::core::*;
 use llvm_sys::prelude::LLVMTypeRef;
+use crate::c_str;
 
 use crate::symbol_table::*;
 

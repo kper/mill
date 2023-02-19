@@ -1,1 +1,2 @@
 mod check_if_function_call_exists;
+mod check_function_has_return_ty;

@@ -66,6 +66,9 @@ fn parse_func() {
     assert!(grammar::FuncdefParser::new()
         .parse("fn x(a : int ,b : int ,c : int) { return k; }")
         .is_ok());
+    assert!(grammar::FuncdefParser::new()
+        .parse("fn x(a : int ,b : int ,c : int) -> int { return k; }")
+        .is_ok());
 }
 
 #[test]

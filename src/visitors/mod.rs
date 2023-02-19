@@ -3,13 +3,26 @@ use anyhow::Result;
 
 mod check_if_function_call_exists;
 mod codegen;
-mod print_visitor;
+mod check_if_function_has_return_ty;
 
 pub use crate::visitors::check_if_function_call_exists::*;
+pub use crate::visitors::check_if_function_has_return_ty::*;
 pub use crate::visitors::codegen::*;
-pub use crate::visitors::print_visitor::*;
 
 use crate::codegen::Codegen;
+
+#[derive(Clone)]
+pub struct Ctx<'a> {
+    pub function: Option<&'a Func>,
+}
+
+impl<'a> Ctx<'a> {
+    pub fn empty() -> Self {
+        Self {
+            function: None
+        }
+    }
+}
 
 pub trait CodegenVisitorTrait {
     fn get_name(&self) -> String;
@@ -49,10 +62,10 @@ pub trait CodegenVisitorTrait {
 pub trait Visitor {
     fn get_name(&self) -> String;
 
-    fn visit_program(&mut self, program: &Program) -> Result<()>;
-    fn visit_func(&mut self, func: &Func) -> Result<()>;
-    fn visit_statement(&mut self, stmt: &Statement) -> Result<()>;
-    fn visit_expr(&mut self, expr: &Expr) -> Result<()>;
-    fn visit_term(&mut self, term: &Term) -> Result<()>;
-    fn visit_struct(&mut self, stru: &Struct) -> Result<()>;
+    fn visit_program<'a>(&mut self, ctx: Ctx<'a>, program: &Program) -> Result<()>;
+    fn visit_func<'a>(&mut self, ctx: Ctx<'a>, func: &Func) -> Result<()>;
+    fn visit_statement<'a>(&mut self, ctx: Ctx<'a>, stmt: &Statement) -> Result<()>;
+    fn visit_expr<'a>(&mut self, ctx: Ctx<'a>, expr: &Expr) -> Result<()>;
+    fn visit_term<'a>(&mut self, ctx: Ctx<'a>, term: &Term) -> Result<()>;
+    fn visit_struct<'a>(&mut self, ctx: Ctx<'a>, stru: &Struct) -> Result<()>;
 }

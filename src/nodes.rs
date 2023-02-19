@@ -2,42 +2,44 @@ use crate::ast::*;
 use crate::visitors::*;
 use anyhow::Result;
 
+
+
 pub trait AbstractNode {
-    fn accept(&mut self, visitor: &mut impl Visitor) -> Result<()>;
+    fn accept<'a>(&mut self, ctx: Ctx<'a>, visitor: &mut impl Visitor) -> Result<()>;
 }
 
 impl AbstractNode for Program {
-    fn accept(&mut self, visitor: &mut impl Visitor) -> Result<()> {
-        visitor.visit_program(self)
+    fn accept<'a>(&mut self, ctx: Ctx<'a>, visitor: &mut impl Visitor) -> Result<()> {
+        visitor.visit_program(ctx, self)
     }
 }
 
 impl AbstractNode for Func {
-    fn accept(&mut self, visitor: &mut impl Visitor) -> Result<()> {
-        visitor.visit_func(self)
+    fn accept<'a>(&mut self, ctx: Ctx<'a>, visitor: &mut impl Visitor) -> Result<()> {
+        visitor.visit_func(ctx, self)
     }
 }
 
 impl AbstractNode for Statement {
-    fn accept(&mut self, visitor: &mut impl Visitor) -> Result<()> {
-        visitor.visit_statement(self)
+    fn accept<'a>(&mut self, ctx: Ctx<'a>, visitor: &mut impl Visitor) -> Result<()> {
+        visitor.visit_statement(ctx, self)
     }
 }
 
 impl AbstractNode for Expr {
-    fn accept(&mut self, visitor: &mut impl Visitor) -> Result<()> {
-        visitor.visit_expr(self)
+    fn accept<'a>(&mut self, ctx: Ctx<'a>, visitor: &mut impl Visitor) -> Result<()> {
+        visitor.visit_expr(ctx, self)
     }
 }
 
 impl AbstractNode for Term {
-    fn accept(&mut self, visitor: &mut impl Visitor) -> Result<()> {
-        visitor.visit_term(self)
+    fn accept<'a>(&mut self, ctx: Ctx<'a>, visitor: &mut impl Visitor) -> Result<()> {
+        visitor.visit_term(ctx, self)
     }
 }
 
 impl AbstractNode for Struct {
-    fn accept(&mut self, visitor: &mut impl Visitor) -> Result<()> {
-        visitor.visit_struct(self)
+    fn accept<'a>(&mut self, ctx: Ctx<'a>, visitor: &mut impl Visitor) -> Result<()> {
+        visitor.visit_struct(ctx,self)
     }
 }
