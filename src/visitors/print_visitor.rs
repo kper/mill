@@ -2,7 +2,7 @@ use crate::visitors::*;
 
 pub struct PrintVisitor;
 
-impl Visitor for PrintVisitor{
+impl Visitor for PrintVisitor {
     fn get_name(&self) -> String {
         "PrintVisitor".to_string()
     }
@@ -21,7 +21,7 @@ impl Visitor for PrintVisitor{
         println!("Visiting statement");
         Ok(())
     }
-    
+
     fn visit_expr(&mut self, _expr: &Expr) -> Result<()> {
         println!("Visiting expr");
         Ok(())

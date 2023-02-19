@@ -1,6 +1,6 @@
 use libc::c_char;
-use std::ffi::CStr;
 use llvm_sys::core::LLVMCreateMessage;
+use std::ffi::CStr;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::ops::Deref;
 

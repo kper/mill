@@ -6,9 +6,9 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
 
+use crate::c_str;
 use llvm_sys::core::*;
 use llvm_sys::prelude::*;
-use crate::c_str;
 
 pub type Key = String;
 
@@ -27,7 +27,12 @@ pub struct BasicValue {
 }
 
 impl BasicValue {
-    pub fn load(&self, _context: LLVMContextRef, builder: LLVMBuilderRef, id: &Identifier) -> Result<LLVMValueRef> {
+    pub fn load(
+        &self,
+        _context: LLVMContextRef,
+        builder: LLVMBuilderRef,
+        id: &Identifier,
+    ) -> Result<LLVMValueRef> {
         if matches!(self.ty, BasicValueType::Pointer) {
             unsafe {
                 let ptr = LLVMBuildLoad(builder, self.value, c_str!(id.get_name()));
@@ -39,7 +44,12 @@ impl BasicValue {
         }
     }
 
-    pub fn store(&self, context: LLVMContextRef, builder: LLVMBuilderRef, id: &Identifier) -> Result<LLVMValueRef> {
+    pub fn store(
+        &self,
+        context: LLVMContextRef,
+        builder: LLVMBuilderRef,
+        id: &Identifier,
+    ) -> Result<LLVMValueRef> {
         let ptr = self.ty.alloca(context, builder, id)?;
 
         unsafe {
@@ -51,7 +61,12 @@ impl BasicValue {
 }
 
 impl BasicValueType {
-    pub fn alloca(&self, context: LLVMContextRef, builder: LLVMBuilderRef, id: &Identifier) -> Result<BasicValue> {
+    pub fn alloca(
+        &self,
+        context: LLVMContextRef,
+        builder: LLVMBuilderRef,
+        id: &Identifier,
+    ) -> Result<BasicValue> {
         unsafe {
             let ty = match &self {
                 BasicValueType::Int(_) => LLVMIntTypeInContext(context, 64),
@@ -132,10 +147,7 @@ impl LLVMExprTable {
      * Add a value to the back.
      */
     pub fn push(&mut self, value: LLVMValueRef, ty: BasicValueType) -> Result<()> {
-        self.stack.push_back(BasicValue {
-            value,
-            ty,
-        });
+        self.stack.push_back(BasicValue { value, ty });
 
         Ok(())
     }
@@ -146,7 +158,6 @@ pub struct LLVMSymbolTable {
     symbols: HashMap<Key, (Identifier, BasicValue)>,
     counter: usize,
 }
-
 
 impl LLVMSymbolTable {
     pub fn lookup_symbol(&self, sym: &Key) -> bool {
@@ -216,7 +227,7 @@ impl FunctionSignature {
     pub fn new(arguments_ty: Vec<DataType>, return_ty: Option<DataType>) -> FunctionSignature {
         Self {
             arguments_ty,
-            return_ty: return_ty.into_iter().collect()
+            return_ty: return_ty.into_iter().collect(),
         }
     }
 

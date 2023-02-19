@@ -1,47 +1,45 @@
-use crate::traversal::Traversal;
 use crate::ast::*;
-use anyhow::Result;
+use crate::traversal::Traversal;
 use crate::visitors::Visitor;
+use anyhow::Result;
 
 pub struct NormalTraversal;
 
 impl Traversal for NormalTraversal {
     fn traverse(&mut self, visitor: &mut Box<dyn Visitor>, program: &mut Program) -> Result<()> {
-           visitor.visit_program(program)?;
+        visitor.visit_program(program)?;
 
-            for struc in program.structs.iter() {
-                visitor.visit_struct(struc)?;
-            }
+        for struc in program.structs.iter() {
+            visitor.visit_struct(struc)?;
+        }
 
-            // Register all functions separetely
-            // This is necessary, because functions need not to be defined before the caller.
-            for function in program.functions.iter() {
-                visitor.visit_func(function)?;
-            }
-            
-            for function in program.functions.iter() {
-                for statement in function.statements.iter() {
+        // Register all functions separetely
+        // This is necessary, because functions need not to be defined before the caller.
+        for function in program.functions.iter() {
+            visitor.visit_func(function)?;
+        }
 
-                    let expr = statement.get_inner();
+        for function in program.functions.iter() {
+            for statement in function.statements.iter() {
+                let expr = statement.get_inner();
 
-                    if let Some(expr) = expr {
-                        recur_expr(expr, visitor)?;
-                        visitor.visit_expr(expr)?;
-                    }
-
-                    visitor.visit_statement(statement.as_ref())?;
+                if let Some(expr) = expr {
+                    recur_expr(expr, visitor)?;
+                    visitor.visit_expr(expr)?;
                 }
+
+                visitor.visit_statement(statement.as_ref())?;
             }
+        }
 
         Ok(())
     }
 }
 
 fn recur_expr(expr: &Box<Expr>, visitor: &mut Box<dyn Visitor>) -> Result<()> {
-
     match expr.as_ref() {
-        Expr::Id(_) => {},
-        Expr::Num(_) => {},
+        Expr::Id(_) => {}
+        Expr::Num(_) => {}
         Expr::Struct(_) => {}
         Expr::Single(ref term) => {
             visitor.visit_term(term)?;

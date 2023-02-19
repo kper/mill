@@ -6,38 +6,37 @@ use std::env;
 use std::fs::File;
 use std::io::Read;
 
-
 mod ast;
 mod codegen;
-mod symbol_table;
-mod visitors;
-mod traversal;
+mod nodes;
 mod pass;
 mod runner;
-mod nodes;
+mod symbol_table;
+mod traversal;
 mod utils;
+mod visitors;
 
-use visitors::*;
 use pass::Pass;
 use runner::Runner;
+use visitors::*;
 
-use crate::traversal::NormalTraversal;
-use crate::traversal::CodegenTraversal;
 use crate::codegen::Codegen;
+use crate::traversal::CodegenTraversal;
+use crate::traversal::NormalTraversal;
 
-use llvm_sys::core::*;
 use llvm_sys::bit_writer::LLVMWriteBitcodeToFile;
+use llvm_sys::core::*;
 
 use log::info;
 
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use llvm_sys::analysis::{LLVMVerifierFailureAction, LLVMVerifyModule};
 
 #[macro_export]
 macro_rules! c_str {
-    ($s:expr) => (
-        format!("{}\0", $s).as_ptr() as * const i8
-    );
+    ($s:expr) => {
+        format!("{}\0", $s).as_ptr() as *const i8
+    };
 }
 
 #[cfg(test)]
@@ -91,18 +90,25 @@ fn run(mut ast: ast::Program) -> Result<()> {
 
         let mut codegen = Codegen::new(context, module, builder);
 
-        runner.run_visitors(&mut passes, &mut ast).context("Running visitors failed")?;
-        
+        runner
+            .run_visitors(&mut passes, &mut ast)
+            .context("Running visitors failed")?;
+
         info!("=> Finished visitors");
 
         let travel = CodegenTraversal;
 
-        runner.run_codegen(&mut CodegenVisitor::new(), &mut codegen, travel, &mut ast)
-                .context("Running codegen failed")?;
+        runner
+            .run_codegen(&mut CodegenVisitor::new(), &mut codegen, travel, &mut ast)
+            .context("Running codegen failed")?;
 
         info!("=> Finished codegen");
 
-        LLVMVerifyModule(module, LLVMVerifierFailureAction::LLVMAbortProcessAction, std::ptr::null_mut());
+        LLVMVerifyModule(
+            module,
+            LLVMVerifierFailureAction::LLVMAbortProcessAction,
+            std::ptr::null_mut(),
+        );
 
         info!("=> Starting writing file");
 
@@ -119,7 +125,8 @@ fn run(mut ast: ast::Program) -> Result<()> {
 }
 
 pub(crate) fn default_passes() -> Vec<Pass> {
-    vec![
-        Pass::new(Box::new(CheckIfFunctionCallExistsVisitor::default()), Box::new(NormalTraversal))
-    ]
+    vec![Pass::new(
+        Box::new(CheckIfFunctionCallExistsVisitor::default()),
+        Box::new(NormalTraversal),
+    )]
 }

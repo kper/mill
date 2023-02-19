@@ -1,4 +1,4 @@
-mod ir;
 mod grammar;
-mod visitors;
+mod ir;
 mod prelude;
+mod visitors;

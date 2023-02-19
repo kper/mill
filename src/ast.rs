@@ -144,7 +144,12 @@ pub struct Func {
 }
 
 impl Func {
-    pub fn new(id: IdTy, pars: Vec<IdTy>, statements: Vec<Box<Statement>>, ret_ty: Option<DataType>) -> Result<Self> {
+    pub fn new(
+        id: IdTy,
+        pars: Vec<IdTy>,
+        statements: Vec<Box<Statement>>,
+        ret_ty: Option<DataType>,
+    ) -> Result<Self> {
         let mut symbol_table = SymbolTable::default();
 
         for stmt in statements.iter() {
@@ -164,12 +169,16 @@ impl Func {
             id,
             pars,
             statements,
-            ret_ty
+            ret_ty,
         })
     }
 
     pub fn get_signature(&self) -> FunctionSignature {
-        let arguments_ty = self.pars.iter().map(|x| x.ty.clone().expect("Argument must have type")).collect();
+        let arguments_ty = self
+            .pars
+            .iter()
+            .map(|x| x.ty.clone().expect("Argument must have type"))
+            .collect();
         let ret_ty = self.ret_ty.clone();
 
         FunctionSignature::new(arguments_ty, ret_ty)
@@ -188,22 +197,12 @@ pub enum Statement {
 impl Statement {
     pub fn get_inner(&self) -> Option<&Box<Expr>> {
         return match self {
-            Statement::Ret(expr) => {
-                Some(expr)
-            }
-            Statement::Assign(_, expr) => {
-                Some(expr)
-            }
-            Statement::ReAssign(_, expr) => {
-                Some(expr)
-            }
-            Statement::Allocate(_, _) => {
-                None
-            }
-            Statement::RetVoid => {
-                None
-            }
-        }
+            Statement::Ret(expr) => Some(expr),
+            Statement::Assign(_, expr) => Some(expr),
+            Statement::ReAssign(_, expr) => Some(expr),
+            Statement::Allocate(_, _) => None,
+            Statement::RetVoid => None,
+        };
     }
 }
 

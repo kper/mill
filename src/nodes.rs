@@ -1,5 +1,5 @@
-use crate::visitors::*; 
 use crate::ast::*;
+use crate::visitors::*;
 use anyhow::Result;
 
 pub trait AbstractNode {

@@ -1,12 +1,12 @@
 use crate::symbol_table::*;
 use llvm_sys::core::*;
 
-use std::collections::HashMap;
 use anyhow::Context;
+use std::collections::HashMap;
 
-use llvm_sys::prelude::*;
 use crate::ast::IdTy;
 use crate::c_str;
+use llvm_sys::prelude::*;
 
 pub struct Codegen {
     pub context: LLVMContextRef,

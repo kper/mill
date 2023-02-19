@@ -1,6 +1,6 @@
 use crate::grammar;
-use insta::assert_snapshot;
 use crate::tests::prelude::*;
+use insta::assert_snapshot;
 
 macro_rules! compile {
     ($input:expr) => {
@@ -23,10 +23,19 @@ macro_rules! compile {
 
             // Run the visitors
             let mut passes = crate::default_passes();
-            runner.run_visitors(&mut passes, &mut program).expect("Running visitor failed");
+            runner
+                .run_visitors(&mut passes, &mut program)
+                .expect("Running visitor failed");
 
             // Codegen and get IR
-            runner.run_codegen(&mut CodegenVisitor::new(), &mut codegen, CodegenTraversal, &mut program).expect("Codegen failed");
+            runner
+                .run_codegen(
+                    &mut CodegenVisitor::new(),
+                    &mut codegen,
+                    CodegenTraversal,
+                    &mut program,
+                )
+                .expect("Codegen failed");
 
             let ir = crate::utils::LLVMString::new(LLVMPrintModuleToString(module)).to_string();
 
@@ -57,7 +66,9 @@ fn test_addition() {
 
 #[test]
 fn test_call_when_names_in_order() {
-    compile!("fn f(b: int) -> int { return b; } fn main() -> int { let a : int = 1; return f(a); }");
+    compile!(
+        "fn f(b: int) -> int { return b; } fn main() -> int { let a : int = 1; return f(a); }"
+    );
 }
 
 #[test]
@@ -78,7 +89,9 @@ fn test_alloc_struct() {
 
 #[test]
 fn test_field_access() {
-    compile!("struct t { a: int, b: int } fn main() { let o = new t; let k : int = o.a; return k; }");
+    compile!(
+        "struct t { a: int, b: int } fn main() { let o = new t; let k : int = o.a; return k; }"
+    );
 }
 
 #[test]

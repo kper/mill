@@ -1,6 +1,6 @@
 use crate::ast::*;
-use crate::visitors::*;
 use crate::traversal::*;
+use crate::visitors::*;
 use anyhow::Result;
 
 pub struct Pass {
@@ -8,13 +8,9 @@ pub struct Pass {
     traversal: Box<dyn Traversal>,
 }
 
-impl Pass
-{
+impl Pass {
     pub fn new(visitor: Box<dyn Visitor>, traversal: Box<dyn Traversal>) -> Self {
-        Self {
-            visitor,
-            traversal
-        }
+        Self { visitor, traversal }
     }
 
     #[allow(dead_code)]
@@ -27,7 +23,7 @@ impl Pass
         &self.visitor
     }
 
-    pub fn run(&mut self, program: &mut Program,) -> Result<()> {
+    pub fn run(&mut self, program: &mut Program) -> Result<()> {
         self.traversal.traverse(&mut self.visitor, program)?;
 
         Ok(())

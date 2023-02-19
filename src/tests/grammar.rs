@@ -40,7 +40,9 @@ fn parse_expr() {
 
 #[test]
 fn parse_statement() {
-    assert!(grammar::StatementParser::new().parse("let x : int = x").is_ok());
+    assert!(grammar::StatementParser::new()
+        .parse("let x : int = x")
+        .is_ok());
 }
 
 #[test]
@@ -68,14 +70,22 @@ fn parse_func() {
 
 #[test]
 fn parse_prog() {
-    assert!(grammar::ProgramParser::new().parse("fn myfunction () {} fn myfunction2() {}").is_ok());
+    assert!(grammar::ProgramParser::new()
+        .parse("fn myfunction () {} fn myfunction2() {}")
+        .is_ok());
 }
 
 #[test]
 fn parse_call() {
-    assert!(grammar::FuncdefParser::new().parse("fn myfunction () {}").is_ok());
-    assert!(grammar::FuncdefParser::new().parse("fn myfunction() {}").is_ok());
-    assert!(grammar::FuncdefParser::new().parse("fn myfunction(a : int) { }").is_ok());
+    assert!(grammar::FuncdefParser::new()
+        .parse("fn myfunction () {}")
+        .is_ok());
+    assert!(grammar::FuncdefParser::new()
+        .parse("fn myfunction() {}")
+        .is_ok());
+    assert!(grammar::FuncdefParser::new()
+        .parse("fn myfunction(a : int) { }")
+        .is_ok());
     assert!(grammar::FuncdefParser::new()
         .parse("fn myfunction(a : int ,b : int ,c : int) {}")
         .is_ok());
@@ -91,7 +101,9 @@ fn parse_struct() {
 #[test]
 fn parse_struct_with_func() {
     assert!(grammar::ProgramParser::new()
-        .parse("struct test123 { } fn x(a: int,b: int,c: int) { } fn test(a: int,b: int,c: int) { }")
+        .parse(
+            "struct test123 { } fn x(a: int,b: int,c: int) { } fn test(a: int,b: int,c: int) { }"
+        )
         .is_ok());
 }
 
@@ -106,5 +118,4 @@ fn parse_struct_with_fields() {
     assert!(grammar::ProgramParser::new()
         .parse("struct test123 { test: int }")
         .is_ok());
-
 }
