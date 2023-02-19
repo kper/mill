@@ -57,7 +57,7 @@ fn test_addition() {
 
 #[test]
 fn test_call_when_names_in_order() {
-    compile!("fn f(a: int) { return a; } fn main() { let a : int = 1; return f(a); }");
+    compile!("fn f(b: int) -> int { return b; } fn main() -> int { let a : int = 1; return f(a); }");
 }
 
 #[test]

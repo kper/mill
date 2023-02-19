@@ -31,6 +31,7 @@ use llvm_sys::bit_writer::LLVMWriteBitcodeToFile;
 use log::info;
 
 use anyhow::{Result, Context};
+use llvm_sys::analysis::{LLVMVerifierFailureAction, LLVMVerifyModule};
 
 #[macro_export]
 macro_rules! c_str {
@@ -100,6 +101,8 @@ fn run(mut ast: ast::Program) -> Result<()> {
                 .context("Running codegen failed")?;
 
         info!("=> Finished codegen");
+
+        LLVMVerifyModule(module, LLVMVerifierFailureAction::LLVMAbortProcessAction, std::ptr::null_mut());
 
         info!("=> Starting writing file");
 

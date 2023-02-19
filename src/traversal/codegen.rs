@@ -21,6 +21,8 @@ impl CodegenTraversal {
             }
 
             for function in program.functions.iter() {
+                visitor.set_block_position_to_function(function, codegen)?;
+
                 for param in function.pars.iter() {
                     visitor.visit_param(function, param, codegen)?;
                 }

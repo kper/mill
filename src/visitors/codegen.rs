@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-use std::env::args;
 use anyhow::{Context, Result};
 
 use crate::visitors::CodegenVisitorTrait;
@@ -8,7 +7,6 @@ use crate::ast::*;
 use log::{debug, warn};
 
 use llvm_sys::core::*;
-use std::ptr;
 use llvm_sys::prelude::LLVMTypeRef;
 use crate::c_str;
 
@@ -80,18 +78,29 @@ impl CodegenVisitorTrait for CodegenVisitor {
         Ok(())
     }
 
+    fn set_block_position_to_function(&mut self, func: &Func, codegen: &mut Codegen) -> Result<()> {
+        let builder = codegen.builder;
+        let block = codegen.block_table
+            .get(func.id.get_name())
+            .with_context(|| "Cannot find block of the function".to_string())?;
+
+        unsafe {
+            LLVMPositionBuilderAtEnd(builder, *block);
+        }
+
+        Ok(())
+    }
+
     fn visit_func(&mut self, func: &Func, codegen: &mut Codegen) -> Result<()> {
         debug!("{}: running visit_func", self.get_name());
 
         let context = codegen.context.clone();
         let module = codegen.module.clone();
-        let builder = codegen.builder.clone();
 
         unsafe {
             let func_type = self.get_llvm_function_ty_by_function_signature(&func.get_signature(), codegen);
             let func_llvm = LLVMAddFunction(module, c_str!(func.id.get_name()), func_type);
             let block = LLVMAppendBasicBlockInContext(context, func_llvm, c_str!(func.id.get_name()));
-            LLVMPositionBuilderAtEnd(builder, block);
 
             codegen.block_table.insert(func.id.get_name(), block)?;
             codegen.function_table.insert(&func.id.get_name(), func.get_signature(), func_llvm)?;
@@ -176,6 +185,8 @@ impl CodegenVisitorTrait for CodegenVisitor {
 
             }
         }
+
+        codegen.clear_expr_table(&func.id)?;
 
         Ok(())
     }

@@ -2,6 +2,7 @@ use crate::symbol_table::*;
 use llvm_sys::core::*;
 
 use std::collections::HashMap;
+use anyhow::Context;
 
 use llvm_sys::prelude::*;
 use crate::ast::IdTy;
@@ -34,5 +35,12 @@ impl Codegen {
                 expr_tables: HashMap::default(),
             }
         }
+    }
+
+    pub fn clear_expr_table(&mut self, function: &IdTy) -> anyhow::Result<()> {
+        self.expr_tables
+            .get_mut(function)
+            .with_context(|| "Cannot find expr table".to_string())?
+            .clear()
     }
 }

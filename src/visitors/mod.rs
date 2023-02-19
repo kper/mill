@@ -22,6 +22,10 @@ pub trait CodegenVisitorTrait {
     fn visit_term(&mut self, func: &Func, stmt: &Statement, expr: &Expr, term: &Term, codegen: &mut Codegen) -> Result<()>;
     fn visit_struct(&mut self, stru: &Struct, codegen: &mut Codegen) -> Result<()>;
 
+    /// In the current implementation, the visit_func is called before the actual traversal because
+    /// it declares the function name. Therefore, we allow forward declarations.
+    /// This function is required so that the position of the block is corrected.
+    fn set_block_position_to_function(&mut self, func: &Func, codegen: &mut Codegen) -> Result<()>;
 }
 
 
