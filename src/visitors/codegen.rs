@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use anyhow::{Context, Result};
 
 use crate::Visitor;
@@ -10,6 +11,7 @@ use llvm_sys::bit_writer::*;
 use llvm_sys::core::*;
 use std::ffi::CString;
 use std::ptr;
+use llvm_sys::LLVMValue;
 use crate::c_str;
 
 use crate::symbol_table::*;
@@ -61,13 +63,28 @@ impl CodegenVisitorTrait for CodegenVisitor {
 
             codegen.block_table.insert(func.id.get_name(), block)?;
             codegen.function_table.insert(&func.id.get_name(), func_llvm)?;
-
+            codegen.expr_tables.insert(func.id.clone(), LLVMExprTable::default());
+            codegen.symbol_tables.insert(func.id.clone(), LLVMSymbolTable::default());
+            debug!("Added function '{}' to function table", func.id.get_name());
         }
 
         Ok(())
     }
 
-    fn visit_statement(&mut self, stmt: &Statement, codegen: &mut Codegen) -> Result<()> {
+    fn visit_param(&mut self, func: &Func, param: &IdTy, codegen: &mut Codegen) -> Result<()> {
+        let llvm_func = codegen.function_table.get(&func.id.get_name()).with_context(|| "Cannot find function".to_string())?;
+        codegen.symbol_tables.get_mut(&func.id)
+            .with_context(|| "Cannot find symbol table of function".to_string())?
+            .insert(param.get_name(), (param.clone(), BasicValue {
+                ty: BasicValueType::Function,
+                value: llvm_func.clone()
+            }))
+            .with_context(|| "Cannot insert into symbol".to_string())?;
+
+        Ok(())
+    }
+
+    fn visit_statement(&mut self, func: &Func, stmt: &Statement, codegen: &mut Codegen) -> Result<()> {
         debug!("{}: Visiting statement {:#?}", self.get_name(), stmt);
 
         let context = codegen.context.clone();
@@ -80,16 +97,26 @@ impl CodegenVisitorTrait for CodegenVisitor {
                     LLVMBuildRetVoid(builder);
                 }
             }
-            Statement::Ret(_expr) => {
-                // The traversing order will evaluate the expression before the statement.
-                let value = codegen.expr_table.get_last().with_context(|| "Failed to fetch last expression value".to_string())?;
+            Statement::Ret(expr) => {
+                self.visit_expr(func, stmt, expr, codegen)?;
+
+                let value = codegen.expr_tables
+                    .get_mut(&func.id)
+                    .with_context(|| "Cannot get expr table")?
+                    .get_last()
+                    .with_context(|| "Failed to fetch last expression value".to_string())?;
 
                 unsafe {
                     LLVMBuildRet(builder, value.value);
                 }
             }
-            Statement::Assign(id, _expr) => {
-                let sym_expr = codegen.expr_table.get_last();
+            Statement::Assign(id, expr) => {
+                self.visit_expr(func, stmt, expr, codegen)?;
+
+                let sym_expr = codegen.expr_tables
+                    .get_mut(&func.id)
+                    .with_context(|| "Cannot get expr table")?
+                    .get_last();
 
                 if let Some(value) = sym_expr {
                     debug!("Building bit cast for {}", id.get_name());
@@ -100,7 +127,10 @@ impl CodegenVisitorTrait for CodegenVisitor {
 
                         let _ = value.store(context, builder, id)?;
 
-                        codegen.symbol_table.insert(id.get_name(), (id.clone(), BasicValue {
+                        codegen.symbol_tables
+                            .get_mut(&func.id)
+                            .with_context(|| "Cannot get symbol table")?
+                            .insert(id.get_name(), (id.clone(), BasicValue {
                             ty: ty.clone(),
                             value: value.value,
                         }))?;
@@ -118,24 +148,36 @@ impl CodegenVisitorTrait for CodegenVisitor {
         Ok(())
     }
 
-    fn visit_expr(&mut self, expr: &Expr, codegen: &mut Codegen) -> Result<()> {
+    fn visit_expr(&mut self, func: &Func, statement: &Statement, expr: &Expr, codegen: &mut Codegen) -> Result<()> {
         let builder = codegen.builder.clone();
         debug!("{}: Visiting expr {:#?}", self.get_name(), expr);
 
         match expr {
-            Expr::Single(_term) => {
-                // do nothing
+            Expr::Single(term) => {
+                self.visit_term(func, statement, expr, term, codegen)?;
             }
             Expr::Num(num) => {
                 unsafe {
                     let i64_ty = LLVMIntTypeInContext(codegen.context, 64);
                     let value = LLVMConstInt(i64_ty, *num as u64, 0);
-                    codegen.expr_table.push(value, BasicValueType::Int(i64_ty))?;
+                    codegen.expr_tables
+                        .get_mut(&func.id)
+                        .with_context(|| "Cannot get expr table")?
+                        .push(value, BasicValueType::Int(i64_ty))?;
                 }
             }
             Expr::Dual(opcode, term1, term2) => {
-                let t2 = codegen.expr_table.get_last().with_context(|| "Cannot get the second term of the operation")?;
-                let t1 = codegen.expr_table.get_last().with_context(|| "Cannot get the first term of the operation")?;
+                self.visit_term(func, statement, expr, term1, codegen)?;
+                self.visit_term(func, statement, expr, term2, codegen)?;
+
+                let t2 = codegen.expr_tables
+                    .get_mut(&func.id)
+                    .with_context(|| "Cannot get expr table")?
+                    .get_last().with_context(|| "Cannot get the second term of the operation")?;
+                let t1 = codegen.expr_tables
+                    .get_mut(&func.id)
+                    .with_context(|| "Cannot get expr table")?
+                    .get_last().with_context(|| "Cannot get the first term of the operation")?;
 
                 unsafe {
                     match opcode {
@@ -144,10 +186,34 @@ impl CodegenVisitorTrait for CodegenVisitor {
                             let value = LLVMBuildAdd(builder, t1.value, t2.value, name);
 
                             let i64_ty = LLVMIntTypeInContext(codegen.context, 64);
-                            codegen.expr_table.push(value, BasicValueType::Int(i64_ty))?;
+                            codegen.expr_tables
+                                .get_mut(&func.id)
+                                .with_context(|| "Cannot get expr table")?
+                                .push(value, BasicValueType::Int(i64_ty))?;
                         }
                         _ => unimplemented!()
                     }
+                }
+            }
+            Expr::Call(ident, exprs) => {
+                for argument in exprs {
+                    self.visit_expr(func, statement, argument, codegen)?;
+                }
+
+                let len = exprs.len();
+                let mut args = VecDeque::with_capacity(len);
+
+                for _ in 0..len {
+                    args.push_front(codegen.expr_tables
+                        .get_mut(&func.id)
+                        .with_context(|| "Cannot get expr table")?
+                        .get_last().with_context(|| "Cannot get last expression for arguments of a function call".to_string())?.value);
+                }
+
+                let fname = (codegen.function_table.get_mut(ident.get_name()).with_context(|| format!("Cannot find function '{}'", ident))? as *mut *mut LLVMValue) as *mut LLVMValue;
+
+                unsafe {
+                    LLVMBuildCall(builder, fname , args.make_contiguous().as_mut_ptr(), len as u32, c_str!(self.generate_number()));
                 }
             }
             _ => {
@@ -158,7 +224,8 @@ impl CodegenVisitorTrait for CodegenVisitor {
         Ok(())
     }
 
-    fn visit_term(&mut self, term: &Term, codegen: &mut Codegen) -> Result<()> {
+    fn visit_term(&mut self, func: &Func, statement: &Statement, expr: &Expr, term: &Term, codegen: &mut Codegen) -> Result<()> {
+        let builder = codegen.builder.clone();
         debug!("{}: Visiting term {:#?}", self.get_name(), term);
 
         match term {
@@ -166,8 +233,41 @@ impl CodegenVisitorTrait for CodegenVisitor {
                 unsafe {
                     let i64_ty = LLVMIntTypeInContext(codegen.context, 64);
                     let value = LLVMConstInt(i64_ty, *num as u64, 0);
-                    codegen.expr_table.push(value, BasicValueType::Int(i64_ty))?;
+                    codegen.expr_tables
+                        .get_mut(&func.id)
+                        .with_context(|| "Cannot get expr table")?
+                        .push(value, BasicValueType::Int(i64_ty))?;
                 }
+            }
+            /*
+            Term::Call(ident, expr) => {
+                let len = expr.len();
+                let mut args = VecDeque::with_capacity(len);
+
+                for _ in 0..len {
+                    args.push_front(codegen.expr_tables
+                        .get_mut(&func.id)
+                        .with_context(|| "Cannot get expr table")?
+                        .get_last().with_context(|| "Cannot get last expression for arguments of a function call".to_string())?.value);
+                }
+
+                let fname = (codegen.function_table.get_mut(ident.get_name()).with_context(|| format!("Cannot find function '{}'", ident))? as *mut *mut LLVMValue) as *mut LLVMValue;
+
+                unsafe {
+                    LLVMBuildCall(builder, fname , args.make_contiguous().as_mut_ptr(), len as u32, c_str!(self.generate_number()));
+                }
+
+            } */
+            Term::Id(ident) => {
+                let sym = codegen.symbol_tables
+                    .get(&func.id)
+                    .with_context(|| "Cannot get expr table")?
+                    .get(ident.get_name()).with_context(|| format!("Cannot find identifier '{:?}' in symbol table", ident))?;
+                codegen.expr_tables
+                    .get_mut(&func.id)
+                    .with_context(|| "Cannot get expr table")?
+                    .push(sym.value, sym.ty.clone()).with_context(|| format!("Cannot push symbol '{:?}' to expr table", ident))?;
+                debug!("Added term '{:?}' to expr table", ident);
             }
             _ => {
                 unimplemented!();
@@ -177,7 +277,7 @@ impl CodegenVisitorTrait for CodegenVisitor {
         Ok(())
     }
 
-    fn visit_struct(&mut self, _stru: &Struct, codegen: &mut Codegen) -> Result<()> {
+    fn visit_struct(&mut self, _stru: &Struct, _codegen: &mut Codegen) -> Result<()> {
         Ok(())
     }
 }

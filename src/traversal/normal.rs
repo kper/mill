@@ -51,6 +51,11 @@ fn recur_expr(expr: &Box<Expr>, visitor: &mut Box<dyn Visitor>) -> Result<()> {
             visitor.visit_term(term1)?;
             visitor.visit_term(term2)?;
         }
+        Expr::Call(_, ref exprs) => {
+            for argument in exprs {
+                visitor.visit_expr(argument)?;
+            }
+        }
     }
 
     Ok(())

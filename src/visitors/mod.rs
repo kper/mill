@@ -16,9 +16,10 @@ pub trait CodegenVisitorTrait {
 
     fn visit_program(&mut self, program: &Program, codegen: &mut Codegen) -> Result<()>;
     fn visit_func(&mut self, func: &Func, codegen: &mut Codegen) -> Result<()>;
-    fn visit_statement(&mut self, stmt: & Statement, codegen: &mut Codegen) -> Result<()>;
-    fn visit_expr(&mut self, expr: &Expr, codegen: &mut Codegen) -> Result<()>;
-    fn visit_term(&mut self, term: &Term, codegen: &mut Codegen) -> Result<()>;
+    fn visit_param(&mut self, func: &Func, param: &IdTy, codegen: &mut Codegen) -> Result<()>;
+    fn visit_statement(&mut self, func: &Func, stmt: &Statement, codegen: &mut Codegen) -> Result<()>;
+    fn visit_expr(&mut self, func: &Func, stmt: &Statement, expr: &Expr, codegen: &mut Codegen) -> Result<()>;
+    fn visit_term(&mut self, func: &Func, stmt: &Statement, expr: &Expr, term: &Term, codegen: &mut Codegen) -> Result<()>;
     fn visit_struct(&mut self, stru: &Struct, codegen: &mut Codegen) -> Result<()>;
 
 }

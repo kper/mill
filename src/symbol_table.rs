@@ -14,8 +14,10 @@ pub type Key = String;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum BasicValueType {
+    Identifier,
     Int(LLVMTypeRef),
     Pointer,
+    Function,
 }
 
 #[derive(Debug, Clone)]
@@ -55,6 +57,8 @@ impl BasicValueType {
             let ty = match &self {
                 BasicValueType::Int(_) => LLVMIntTypeInContext(context, 64),
                 BasicValueType::Pointer => bail!("Cannot alloca a pointer"),
+                BasicValueType::Identifier => bail!("Cannot alloca a identifier"),
+                BasicValueType::Function => bail!("Cannot alloca a function"),
             };
 
             let value_ref = LLVMBuildAlloca(builder, ty, c_str!(id));
@@ -71,6 +75,8 @@ impl BasicValueType {
         match &self {
             BasicValueType::Int(x) => x.clone(),
             BasicValueType::Pointer => panic!("Cannot get ty of a pointer"),
+            BasicValueType::Identifier => panic!("Cannot get ty of an identifier"),
+            BasicValueType::Function => panic!("Cannot get ty of a function"),
         }
     }
 }
@@ -208,6 +214,10 @@ impl LLVMFunctionTable {
 
     pub fn get(&self, sym: &Key) -> Option<&LLVMValueRef> {
         self.symbols.get(sym)
+    }
+
+    pub fn get_mut(&mut self, sym: &Key) -> Option<&mut LLVMValueRef> {
+        self.symbols.get_mut(sym)
     }
 
     pub fn insert(&mut self, sym: &Key, val: LLVMValueRef) -> Result<()> {

@@ -225,6 +225,7 @@ pub enum Expr {
     Struct(Identifier),
     Dual(Opcode, Box<Term>, Box<Term>),
     Single(Box<Term>),
+    Call(IdTy, Vec<Box<Expr>>),
 }
 
 #[derive(Debug, Clone)]
@@ -246,5 +247,4 @@ pub enum Term {
     Num(i64),
     Id(IdTy),
     Object(IdTy, IdTy),
-    Call(IdTy, Vec<Box<Expr>>),
 }

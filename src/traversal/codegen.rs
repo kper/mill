@@ -23,16 +23,21 @@ impl CodegenTraversal {
             }
 
             for function in program.functions.iter() {
+                for param in function.pars.iter() {
+                    visitor.visit_param(function, param, codegen)?;
+                }
+
                 for statement in function.statements.iter() {
 
+                    /*
                     let expr = statement.get_inner();
 
                     if let Some(expr) = expr {
-                        recur_expr(expr, visitor, codegen)?;
-                        visitor.visit_expr(expr, codegen)?;
-                    }
+                        recur_expr(function, statement, expr, visitor, codegen)?;
+                        visitor.visit_expr(function, statement, expr, codegen)?;
+                    }*/
 
-                    visitor.visit_statement(statement.as_ref(),  codegen)?;
+                    visitor.visit_statement(function, statement.as_ref(),  codegen)?;
                 }
             }
 
@@ -40,18 +45,23 @@ impl CodegenTraversal {
     }
 }
 
-fn recur_expr(expr: &Box<Expr>, visitor: &mut impl CodegenVisitorTrait, codegen: &mut Codegen) -> Result<()> {
+fn recur_expr(function: &Func, statement: &Box<Statement>, expr: &Box<Expr>, visitor: &mut impl CodegenVisitorTrait, codegen: &mut Codegen) -> Result<()> {
 
     match expr.as_ref() {
         Expr::Id(_) => {},
         Expr::Num(_) => {},
         Expr::Struct(_) => {}
         Expr::Single(ref term) => {
-            visitor.visit_term(term, codegen)?;
+            visitor.visit_term(function, statement, expr, term, codegen)?;
         }
         Expr::Dual(_, ref term1, ref term2) => {
-            visitor.visit_term(term1, codegen)?;
-            visitor.visit_term(term2, codegen)?;
+            visitor.visit_term(function, statement, expr, term1, codegen)?;
+            visitor.visit_term(function, statement, expr, term2, codegen)?;
+        }
+        Expr::Call(_, ref exprs) => {
+            for argument in exprs {
+                visitor.visit_expr(function, statement, argument,  codegen)?;
+            }
         }
     }
 

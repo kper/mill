@@ -19,5 +19,6 @@ fn test_function_defined_twice() {
         Pass::new(Box::new(CheckIfFunctionCallExistsVisitor::default()), Box::new(NormalTraversal))
     ];
 
-    let _result = run_visitor!(input, &mut passes).expect("should work");
+    let result = run_visitor!(input, &mut passes);
+    assert!(result.is_err(), "Expected to throw exception");
 }

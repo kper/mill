@@ -50,16 +50,11 @@ impl Visitor for CheckIfFunctionCallExistsVisitor {
         Ok(())
     }
 
-    fn visit_expr<'ctx>(&mut self, _expr: &'ctx Expr) -> Result<()> {
-        //println!("Visiting expr");
-        Ok(())
-    }
-
-    fn visit_term<'ctx>(&mut self, term: &'ctx Term) -> Result<()> {
+    fn visit_expr<'ctx>(&mut self, expr: &'ctx Expr) -> Result<()> {
         let symbol_table = &self.symbol_table;
-        match term {
-            Term::Call(id, _exprs) => {
-                debug!("{}: Calling `visit_term` for calling function: {}", self.get_name(), id);
+        match expr {
+            Expr::Call(id, _exprs) => {
+                debug!("{}: Calling `visit_expr` for calling function: {}", self.get_name(), id);
 
                 // It is also possible that another function call is nested in `_exprs`
                 // but we can ignore it here, because it is the responsibility of the
@@ -71,7 +66,10 @@ impl Visitor for CheckIfFunctionCallExistsVisitor {
             }
             _ => {}
         }
+        Ok(())
+    }
 
+    fn visit_term<'ctx>(&mut self, term: &'ctx Term) -> Result<()> {
         Ok(())
     }
 
