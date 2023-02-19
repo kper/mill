@@ -78,6 +78,7 @@ DataType: DataType = {
 pub Statements = SemiComma<Statement>;
 
 pub Statement: Box<Statement> = {
+	"return" => Box::new(Statement::RetVoid),
 	"return" <e:Expr> => Box::new(Statement::Ret(e)),
     "let" <id:Id> ":" <dat:DataType> "=" <e:Expr> => {
         Box::new(Statement::Assign(id.update_ty(dat), e))

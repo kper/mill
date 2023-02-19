@@ -16,7 +16,7 @@ fn test_function_when_void_but_ret() {
 #[test]
 fn test_function_when_not_void_but_ret_void() {
     let input =
-        "fn x(a: int,b: int, c: int) -> int { return; } ";
+        "fn x(a: int,b: int, c: int) -> int { return; }";
     let mut passes = vec![Pass::new(
         Box::new(CheckIfFunctionHasReturnTyVisitor::default()),
         Box::new(NormalTraversal),
