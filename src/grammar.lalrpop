@@ -55,7 +55,7 @@ pub Funcdef : Func = {
 	"fn" <id:Id> "(" <pars:Pars> ")" "{" <statements:Statements> "}" =>? Func::new(id, pars, statements, None).map_err(|w| ParseError::User {
         error: w
     }),
-    "fn" <id:Id> "(" <pars:Pars> ")" "{" <statements:Statements> "}" "->" <ret:Id> =>? Func::new(id, pars, statements, Some(ret)).map_err(|w| ParseError::User {
+    "fn" <id:Id> "(" <pars:Pars> ")" "->" <ret:DataType>  "{" <statements:Statements> "}" =>? Func::new(id, pars, statements, Some(ret)).map_err(|w| ParseError::User {
         error: w
     })
 };

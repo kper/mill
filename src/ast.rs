@@ -1,4 +1,4 @@
-use crate::symbol_table::SymbolTable;
+use crate::symbol_table::{FunctionSignature, SymbolTable};
 use anyhow::{bail, Result};
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -140,11 +140,11 @@ pub struct Func {
     /// The statements of the function
     pub statements: Vec<Box<Statement>>,
     /// Return type of the function. This is None when void.
-    pub ret_ty: Option<IdTy>,
+    pub ret_ty: Option<DataType>,
 }
 
 impl Func {
-    pub fn new(id: IdTy, pars: Vec<IdTy>, statements: Vec<Box<Statement>>, ret_ty: Option<IdTy>) -> Result<Self> {
+    pub fn new(id: IdTy, pars: Vec<IdTy>, statements: Vec<Box<Statement>>, ret_ty: Option<DataType>) -> Result<Self> {
         let mut symbol_table = SymbolTable::default();
 
         for stmt in statements.iter() {
@@ -166,6 +166,13 @@ impl Func {
             statements,
             ret_ty
         })
+    }
+
+    pub fn get_signature(&self) -> FunctionSignature {
+        let arguments_ty = self.pars.iter().map(|x| x.ty.clone().expect("Argument must have type")).collect();
+        let ret_ty = self.ret_ty.clone();
+
+        FunctionSignature::new(arguments_ty, ret_ty)
     }
 }
 

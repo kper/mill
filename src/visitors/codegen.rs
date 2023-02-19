@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::env::args;
 use anyhow::{Context, Result};
 
 use crate::visitors::CodegenVisitorTrait;
@@ -8,7 +9,7 @@ use log::{debug, warn};
 
 use llvm_sys::core::*;
 use std::ptr;
-use llvm_sys::LLVMValue;
+use llvm_sys::prelude::LLVMTypeRef;
 use crate::c_str;
 
 use crate::symbol_table::*;
@@ -28,6 +29,44 @@ impl CodegenVisitor {
         let number = self.number_generator;
         self.number_generator += 1;
         number
+    }
+
+    unsafe fn get_void_ty(&self, codegen: &mut Codegen) -> LLVMTypeRef {
+        LLVMVoidTypeInContext(codegen.context)
+    }
+
+    unsafe fn get_i8_ty(&self, codegen: &mut Codegen) -> LLVMTypeRef {
+        LLVMIntTypeInContext(codegen.context, 8)
+    }
+
+    unsafe fn get_i32_ty(&self, codegen: &mut Codegen) -> LLVMTypeRef {
+        LLVMIntTypeInContext(codegen.context, 32)
+    }
+
+    unsafe fn get_basic_value_ty_from_datatype(&self, ty: &DataType, codegen: &mut Codegen) -> BasicValueType {
+        match ty {
+            DataType::Int => BasicValueType::Int(self.get_i32_ty(codegen)),
+            _ => unimplemented!()
+        }
+    }
+
+    unsafe fn get_llvm_function_ty_by_function_signature(&mut self,
+                                                         function_signature: &FunctionSignature,
+                                                         codegen: &mut Codegen) -> LLVMTypeRef {
+        let mut args_ty : Vec<_> = function_signature.get_args_ty().iter().map(|arg| {
+            match arg {
+                DataType::Int => self.get_i32_ty(codegen),
+                _ => unimplemented!()
+            }
+        }).collect();
+
+        let ret_ty = match function_signature.get_ret_ty() {
+            Some(DataType::Int) => self.get_i32_ty(codegen),
+            None => self.get_void_ty(codegen),
+            _ => unimplemented!()
+        };
+
+        LLVMFunctionType(ret_ty, args_ty.as_mut_ptr(), args_ty.len() as u32, 0)
     }
 }
 
@@ -49,17 +88,13 @@ impl CodegenVisitorTrait for CodegenVisitor {
         let builder = codegen.builder.clone();
 
         unsafe {
-            let void_type = LLVMVoidTypeInContext(context);
-            let i8_type = LLVMIntTypeInContext(context, 8);
-            let _i8_pointer_type = LLVMPointerType(i8_type, 0);
-
-            let func_type = LLVMFunctionType(void_type, ptr::null_mut(), 0, 0);
+            let func_type = self.get_llvm_function_ty_by_function_signature(&func.get_signature(), codegen);
             let func_llvm = LLVMAddFunction(module, c_str!(func.id.get_name()), func_type);
             let block = LLVMAppendBasicBlockInContext(context, func_llvm, c_str!(func.id.get_name()));
             LLVMPositionBuilderAtEnd(builder, block);
 
             codegen.block_table.insert(func.id.get_name(), block)?;
-            codegen.function_table.insert(&func.id.get_name(), func_llvm)?;
+            codegen.function_table.insert(&func.id.get_name(), func.get_signature(), func_llvm)?;
             codegen.expr_tables.insert(func.id.clone(), LLVMExprTable::default());
             codegen.symbol_tables.insert(func.id.clone(), LLVMSymbolTable::default());
             debug!("Added function '{}' to function table", func.id.get_name());
@@ -69,7 +104,7 @@ impl CodegenVisitorTrait for CodegenVisitor {
     }
 
     fn visit_param(&mut self, func: &Func, param: &IdTy, codegen: &mut Codegen) -> Result<()> {
-        let llvm_func = codegen.function_table.get(&func.id.get_name()).with_context(|| "Cannot find function".to_string())?;
+        let (_, llvm_func) = codegen.function_table.get(&func.id.get_name()).with_context(|| "Cannot find function".to_string())?;
         codegen.symbol_tables.get_mut(&func.id)
             .with_context(|| "Cannot find symbol table of function".to_string())?
             .insert(param.get_name(), (param.clone(), BasicValue {
@@ -101,7 +136,7 @@ impl CodegenVisitorTrait for CodegenVisitor {
                     .get_mut(&func.id)
                     .with_context(|| "Cannot get expr table")?
                     .get_last()
-                    .with_context(|| "Failed to fetch last expression value".to_string())?;
+                    .with_context(|| format!("Failed to fetch last expression value when returning from function '{}'", func.id.get_name()))?;
 
                 unsafe {
                     LLVMBuildRet(builder, value.value);
@@ -194,8 +229,11 @@ impl CodegenVisitorTrait for CodegenVisitor {
             }
             Expr::Call(ident, exprs) => {
                 for argument in exprs {
-                    self.visit_expr(func, statement, argument, codegen)?;
+                    self.visit_expr(func, statement, argument, codegen)
+                        .with_context(|| "Failed when visiting expressions of the arguments of a function call".to_string())?;
                 }
+
+                debug!("Building function call for '{}'", ident);
 
                 let len = exprs.len();
                 let mut args = VecDeque::with_capacity(len);
@@ -204,13 +242,23 @@ impl CodegenVisitorTrait for CodegenVisitor {
                     args.push_front(codegen.expr_tables
                         .get_mut(&func.id)
                         .with_context(|| "Cannot get expr table")?
-                        .get_last().with_context(|| "Cannot get last expression for arguments of a function call".to_string())?.value);
+                        .get_last()
+                        .with_context(|| "Cannot get last expression for arguments of a function call".to_string())?.value);
                 }
 
-                let fname = (codegen.function_table.get_mut(ident.get_name()).with_context(|| format!("Cannot find function '{}'", ident))? as *mut *mut LLVMValue) as *mut LLVMValue;
+                debug!("Removed '{}' arguments from expr table", len);
 
                 unsafe {
-                    LLVMBuildCall(builder, fname , args.make_contiguous().as_mut_ptr(), len as u32, c_str!(self.generate_number()));
+                    let (function_signature, function_ref) = codegen.function_table.get_mut(ident.get_name()).with_context(|| format!("Cannot find function '{}'", ident)) .map(|(function_signature, function_ref)| (function_signature.clone(), *function_ref))?; if let Some(ret_ty) = function_signature.get_ret_ty() {
+                        let basic_ty = self.get_basic_value_ty_from_datatype(ret_ty, codegen);
+                        let value = LLVMBuildCall(builder, function_ref , args.make_contiguous().as_mut_ptr(), 0, c_str!(self.generate_number()));
+                        codegen.expr_tables
+                            .get_mut(&func.id)
+                            .with_context(|| "Cannot find function".to_string())?
+                            .push(value, basic_ty)
+                            .with_context(|| "Cannot add expression to the expr table")?;
+                        debug!("Added expr to expr table");
+                    }
                 }
             }
             _ => {

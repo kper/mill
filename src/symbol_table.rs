@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::ast::{Identifier, Struct};
+use crate::ast::{DataType, Identifier, Struct};
 use anyhow::{bail, Result};
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -23,7 +23,7 @@ pub enum BasicValueType {
 #[derive(Debug, Clone)]
 pub struct BasicValue {
     pub ty: BasicValueType,
-    pub value: LLVMValueRef
+    pub value: LLVMValueRef,
 }
 
 impl BasicValue {
@@ -34,8 +34,7 @@ impl BasicValue {
 
                 return Ok(ptr);
             }
-        }
-        else {
+        } else {
             bail!("Loaded value has to be a pointer");
         }
     }
@@ -64,7 +63,7 @@ impl BasicValueType {
             let value_ref = LLVMBuildAlloca(builder, ty, c_str!(id));
             let value = BasicValue {
                 ty: BasicValueType::Pointer,
-                value: value_ref
+                value: value_ref,
             };
 
             Ok(value)
@@ -135,7 +134,7 @@ impl LLVMExprTable {
     pub fn push(&mut self, value: LLVMValueRef, ty: BasicValueType) -> Result<()> {
         self.stack.push_back(BasicValue {
             value,
-            ty
+            ty,
         });
 
         Ok(())
@@ -147,7 +146,6 @@ pub struct LLVMSymbolTable {
     symbols: HashMap<Key, (Identifier, BasicValue)>,
     counter: usize,
 }
-
 
 
 impl LLVMSymbolTable {
@@ -186,8 +184,7 @@ impl LLVMSymbolTable {
 
         if let Some((id, value)) = x {
             Some((id.clone(), value.clone()))
-        }
-        else {
+        } else {
             None
         }
     }
@@ -203,8 +200,36 @@ impl LLVMSymbolTable {
 
 #[derive(Debug, Default)]
 pub struct LLVMFunctionTable {
-    symbols: HashMap<Key, LLVMValueRef>,
+    symbols: HashMap<Key, (FunctionSignature, LLVMValueRef)>,
     counter: usize,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct FunctionSignature {
+    /// Types of the arguments of a function.
+    arguments_ty: Vec<DataType>,
+    /// Types of the return values of a function.
+    return_ty: Vec<DataType>,
+}
+
+impl FunctionSignature {
+    pub fn new(arguments_ty: Vec<DataType>, return_ty: Option<DataType>) -> FunctionSignature {
+        Self {
+            arguments_ty,
+            return_ty: return_ty.into_iter().collect()
+        }
+    }
+
+    /// Get the types of the arguments.
+    pub fn get_args_ty(&self) -> &[DataType] {
+        &self.arguments_ty
+    }
+
+    /// Get the return type of the function.
+    /// Currently only one return type is supported.
+    pub fn get_ret_ty(&self) -> Option<&DataType> {
+        self.return_ty.get(0)
+    }
 }
 
 impl LLVMFunctionTable {
@@ -212,17 +237,17 @@ impl LLVMFunctionTable {
         self.symbols.contains_key(sym)
     }
 
-    pub fn get(&self, sym: &Key) -> Option<&LLVMValueRef> {
+    pub fn get(&self, sym: &Key) -> Option<&(FunctionSignature, LLVMValueRef)> {
         self.symbols.get(sym)
     }
 
-    pub fn get_mut(&mut self, sym: &Key) -> Option<&mut LLVMValueRef> {
+    pub fn get_mut(&mut self, sym: &Key) -> Option<&mut (FunctionSignature, LLVMValueRef)> {
         self.symbols.get_mut(sym)
     }
 
-    pub fn insert(&mut self, sym: &Key, val: LLVMValueRef) -> Result<()> {
+    pub fn insert(&mut self, sym: &Key, sig: FunctionSignature, val: LLVMValueRef) -> Result<()> {
         if !self.lookup_symbol(sym) {
-            self.symbols.insert(sym.clone(), val);
+            self.symbols.insert(sym.clone(), (sig, val));
             Ok(())
         } else {
             bail!("Symbol {} is already defined", sym);
