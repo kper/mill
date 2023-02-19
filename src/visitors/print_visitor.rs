@@ -1,5 +1,4 @@
 use crate::visitors::*;
-use std::any::Any;
 
 pub struct PrintVisitor;
 
@@ -8,39 +7,32 @@ impl Visitor for PrintVisitor{
         "PrintVisitor".to_string()
     }
 
-    fn visit_program<'ctx>(&mut self, _program: &'ctx Program) -> Result<()> {
+    fn visit_program(&mut self, _program: &Program) -> Result<()> {
         println!("Visiting program");
         Ok(())
     }
 
-    fn visit_func<'ctx>(&mut self, _func: &'ctx Func) -> Result<()> {
+    fn visit_func(&mut self, _func: &Func) -> Result<()> {
         println!("Visiting func");
         Ok(())
     }
 
-    fn visit_statement<'ctx>(&mut self, _stmt: &'ctx Statement) -> Result<()> {
+    fn visit_statement(&mut self, _stmt: &Statement) -> Result<()> {
         println!("Visiting statement");
         Ok(())
     }
     
-    //fn visit_guard(&mut self, label: &Option<IdTy>, guard: &mut Guard) -> Result<()>;
-
-    fn visit_guard<'ctx>(&mut self, _guard: &'ctx Guard) -> Result<()> {
-        println!("Visiting guard");
-        Ok(())
-    }
-
-    fn visit_expr<'ctx>(&mut self, _expr: &'ctx Expr) -> Result<()> {
+    fn visit_expr(&mut self, _expr: &Expr) -> Result<()> {
         println!("Visiting expr");
         Ok(())
     }
 
-    fn visit_term<'ctx>(&mut self, _term: &'ctx Term) -> Result<()> {
+    fn visit_term(&mut self, _term: &Term) -> Result<()> {
         println!("Visiting term");
         Ok(())
     }
 
-    fn visit_struct<'ctx>(&mut self, _stru: &'ctx Struct) -> Result<()> {
+    fn visit_struct(&mut self, _stru: &Struct) -> Result<()> {
         println!("Visiting struct");
         Ok(())
     }

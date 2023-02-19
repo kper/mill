@@ -89,11 +89,6 @@ pub Statement: Box<Statement> = {
         Box::new(Statement::Allocate(id.update_ty(DataType::Struct(Box::new(st.clone()))), st))
 };
 
-Continuation: Continuation = {
-    "continue" => Continuation::Continue,
-    "break" => Continuation::Break,
-};
-
 pub Expr: Box<Expr> = {
     <n1:Term> <op:BinOp> <n2:Term> => Box::new(Expr::Dual(op, n1, n2)),
     "(" <n1:Term> <op:BinOp> <n2:Term> ")" => Box::new(Expr::Dual(Opcode::Geq, n1, n2)),

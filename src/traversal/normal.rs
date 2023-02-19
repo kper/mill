@@ -2,7 +2,6 @@ use crate::traversal::Traversal;
 use crate::ast::*;
 use anyhow::Result;
 use crate::visitors::Visitor;
-use either::Either;
 
 pub struct NormalTraversal;
 

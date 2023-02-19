@@ -1,8 +1,5 @@
 use crate::symbol_table::SymbolTable;
-use crate::visitors::CodegenVisitor;
-use either::Either;
 use anyhow::{bail, Result};
-use std::collections::HashSet;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
@@ -144,7 +141,6 @@ pub struct Func {
     pub statements: Vec<Box<Statement>>,
     /// Return type of the function. This is None when void.
     pub ret_ty: Option<IdTy>,
-    symbol_table: SymbolTable,
 }
 
 impl Func {
@@ -168,7 +164,6 @@ impl Func {
             id,
             pars,
             statements,
-            symbol_table,
             ret_ty
         })
     }
@@ -203,19 +198,6 @@ impl Statement {
             }
         }
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct Guard {
-    pub guard: Option<Box<Expr>>,
-    pub statements: Vec<Box<Statement>>,
-    pub continuation: Continuation,
-}
-
-#[derive(Debug, Clone)]
-pub enum Continuation {
-    Continue,
-    Break,
 }
 
 #[derive(Debug, Clone)]

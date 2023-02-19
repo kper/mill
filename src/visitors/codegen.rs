@@ -1,15 +1,12 @@
 use std::collections::VecDeque;
 use anyhow::{Context, Result};
 
-use crate::Visitor;
 use crate::visitors::CodegenVisitorTrait;
-use crate::codegen::{Codegen, MRef};
+use crate::codegen::{Codegen};
 use crate::ast::*;
 use log::{debug, warn};
 
-use llvm_sys::bit_writer::*;
 use llvm_sys::core::*;
-use std::ffi::CString;
 use std::ptr;
 use llvm_sys::LLVMValue;
 use crate::c_str;
@@ -39,7 +36,7 @@ impl CodegenVisitorTrait for CodegenVisitor {
         "CodegenVisitor".to_string()
     }
 
-    fn visit_program(&mut self, _program: &Program, codegen: &mut Codegen) -> Result<()> {
+    fn visit_program(&mut self, _program: &Program, _codegen: &mut Codegen) -> Result<()> {
         debug!("{}: running visit_program", self.get_name());
         Ok(())
     }
@@ -224,8 +221,7 @@ impl CodegenVisitorTrait for CodegenVisitor {
         Ok(())
     }
 
-    fn visit_term(&mut self, func: &Func, statement: &Statement, expr: &Expr, term: &Term, codegen: &mut Codegen) -> Result<()> {
-        let builder = codegen.builder.clone();
+    fn visit_term(&mut self, func: &Func, _statement: &Statement, _expr: &Expr, term: &Term, codegen: &mut Codegen) -> Result<()> {
         debug!("{}: Visiting term {:#?}", self.get_name(), term);
 
         match term {
@@ -239,25 +235,6 @@ impl CodegenVisitorTrait for CodegenVisitor {
                         .push(value, BasicValueType::Int(i64_ty))?;
                 }
             }
-            /*
-            Term::Call(ident, expr) => {
-                let len = expr.len();
-                let mut args = VecDeque::with_capacity(len);
-
-                for _ in 0..len {
-                    args.push_front(codegen.expr_tables
-                        .get_mut(&func.id)
-                        .with_context(|| "Cannot get expr table")?
-                        .get_last().with_context(|| "Cannot get last expression for arguments of a function call".to_string())?.value);
-                }
-
-                let fname = (codegen.function_table.get_mut(ident.get_name()).with_context(|| format!("Cannot find function '{}'", ident))? as *mut *mut LLVMValue) as *mut LLVMValue;
-
-                unsafe {
-                    LLVMBuildCall(builder, fname , args.make_contiguous().as_mut_ptr(), len as u32, c_str!(self.generate_number()));
-                }
-
-            } */
             Term::Id(ident) => {
                 let sym = codegen.symbol_tables
                     .get(&func.id)

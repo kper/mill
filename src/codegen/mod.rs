@@ -1,7 +1,6 @@
 use crate::symbol_table::*;
 use llvm_sys::core::*;
 
-use anyhow::{Context, Result};
 use std::collections::HashMap;
 
 use llvm_sys::prelude::*;
@@ -17,10 +16,6 @@ pub struct Codegen {
     pub block_table: LLVMBlockTable,
     pub struct_table: LLVMStructTable,
     pub expr_tables: HashMap<IdTy, LLVMExprTable>,
-}
-
-pub enum MRef {
-    Value(BasicValue),
 }
 
 impl Codegen {

@@ -17,10 +17,12 @@ impl Pass
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_name(&self) -> String {
         self.visitor.get_name().clone()
     }
 
+    #[allow(dead_code)]
     pub fn get_visitor(&self) -> &Box<dyn Visitor> {
         &self.visitor
     }

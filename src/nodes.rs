@@ -24,12 +24,6 @@ impl AbstractNode for Statement {
     }
 }
 
-impl AbstractNode for Guard {
-    fn accept(&mut self, visitor: &mut impl Visitor) -> Result<()> {
-        visitor.visit_guard(self)
-    }
-}
-
 impl AbstractNode for Expr {
     fn accept(&mut self, visitor: &mut impl Visitor) -> Result<()> {
         visitor.visit_expr(self)

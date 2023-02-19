@@ -31,7 +31,6 @@ pub trait Visitor {
     fn visit_program(&mut self, program: &Program) -> Result<()>;
     fn visit_func(&mut self, func: &Func) -> Result<()>;
     fn visit_statement(&mut self, stmt: &Statement) -> Result<()>;
-    fn visit_guard(&mut self, guard: &Guard) -> Result<()>;
     fn visit_expr(&mut self, expr: &Expr) -> Result<()>;
     fn visit_term(&mut self, term: &Term) -> Result<()>;
     fn visit_struct(&mut self, stru: &Struct) -> Result<()>;

@@ -1,5 +1,4 @@
 use crate::visitors::*;
-use crate::ast::*;
 
 use crate::symbol_table::SymbolTable;
 
@@ -19,11 +18,11 @@ impl Visitor for CheckIfFunctionCallExistsVisitor {
         "CheckIfFunctionCallExistsVisitor".to_string()
     }
 
-    fn visit_program<'ctx>(&mut self, _program: &'ctx Program) -> Result<()> {
+    fn visit_program(&mut self, _program: &Program) -> Result<()> {
         Ok(())
     }
 
-    fn visit_func<'ctx>(&mut self, func: &'ctx Func) -> Result<()> {
+    fn visit_func(&mut self, func: &Func) -> Result<()> {
         debug!("{}: Calling `visit_func` for function: {}", self.get_name(), func.id.get_name());
 
         let symbol_table = &mut self.symbol_table;
@@ -38,19 +37,12 @@ impl Visitor for CheckIfFunctionCallExistsVisitor {
         Ok(())
     }
 
-    fn visit_statement<'ctx>(&mut self, _stmt: &'ctx Statement) -> Result<()> {
+    fn visit_statement(&mut self, _stmt: &Statement) -> Result<()> {
         //println!("Visiting statement");
         Ok(())
     }
-    
-    //fn visit_guard(&mut self, label: &Option<IdTy>, guard: &mut Guard) -> Result<()>;
 
-    fn visit_guard<'ctx>(&mut self, _guard: &'ctx Guard) -> Result<()> {
-        //println!("Visiting guard");
-        Ok(())
-    }
-
-    fn visit_expr<'ctx>(&mut self, expr: &'ctx Expr) -> Result<()> {
+    fn visit_expr(&mut self, expr: &Expr) -> Result<()> {
         let symbol_table = &self.symbol_table;
         match expr {
             Expr::Call(id, _exprs) => {
@@ -69,12 +61,11 @@ impl Visitor for CheckIfFunctionCallExistsVisitor {
         Ok(())
     }
 
-    fn visit_term<'ctx>(&mut self, term: &'ctx Term) -> Result<()> {
+    fn visit_term<'ctx>(&mut self, _term: &'ctx Term) -> Result<()> {
         Ok(())
     }
 
     fn visit_struct<'ctx>(&mut self, _stru: &'ctx Struct) -> Result<()> {
-        //println!("Visiting struct");
         Ok(())
     }
 }

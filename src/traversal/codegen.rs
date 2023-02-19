@@ -1,8 +1,6 @@
-use crate::traversal::Traversal;
 use crate::ast::*;
 use anyhow::Result;
 use crate::visitors::CodegenVisitorTrait;
-use either::Either;
 
 use crate::codegen::Codegen;
 
@@ -28,42 +26,10 @@ impl CodegenTraversal {
                 }
 
                 for statement in function.statements.iter() {
-
-                    /*
-                    let expr = statement.get_inner();
-
-                    if let Some(expr) = expr {
-                        recur_expr(function, statement, expr, visitor, codegen)?;
-                        visitor.visit_expr(function, statement, expr, codegen)?;
-                    }*/
-
                     visitor.visit_statement(function, statement.as_ref(),  codegen)?;
                 }
             }
 
         Ok(())
     }
-}
-
-fn recur_expr(function: &Func, statement: &Box<Statement>, expr: &Box<Expr>, visitor: &mut impl CodegenVisitorTrait, codegen: &mut Codegen) -> Result<()> {
-
-    match expr.as_ref() {
-        Expr::Id(_) => {},
-        Expr::Num(_) => {},
-        Expr::Struct(_) => {}
-        Expr::Single(ref term) => {
-            visitor.visit_term(function, statement, expr, term, codegen)?;
-        }
-        Expr::Dual(_, ref term1, ref term2) => {
-            visitor.visit_term(function, statement, expr, term1, codegen)?;
-            visitor.visit_term(function, statement, expr, term2, codegen)?;
-        }
-        Expr::Call(_, ref exprs) => {
-            for argument in exprs {
-                visitor.visit_expr(function, statement, argument,  codegen)?;
-            }
-        }
-    }
-
-    Ok(())
 }
