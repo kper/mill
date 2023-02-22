@@ -65,6 +65,11 @@ fn test_addition() {
 }
 
 #[test]
+fn test_conditional() {
+    compile!("fn main() -> int { if 2 == 2 { return 1; }; return 0; }");
+}
+
+#[test]
 fn test_call_when_names_in_order() {
     compile!(
         "fn f(b: int) -> int { return b; } fn main() -> int { let a : int = 1; return f(a); }"

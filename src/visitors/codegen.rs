@@ -7,6 +7,7 @@ use crate::visitors::CodegenVisitorTrait;
 use log::{debug, warn};
 
 use llvm_sys::core::*;
+use llvm_sys::LLVMIntPredicate;
 use llvm_sys::prelude::LLVMTypeRef;
 use crate::c_str;
 
@@ -177,8 +178,8 @@ impl CodegenVisitorTrait for CodegenVisitor {
                     debug!("Building bit cast for {}", id.get_name());
 
                     unsafe {
-                        let i64_ty = LLVMIntTypeInContext(codegen.context, 64);
-                        let ty = BasicValueType::Int(i64_ty);
+                        let i32_ty = self.get_i32_ty(codegen);
+                        let ty = BasicValueType::Int(i32_ty);
 
                         let _ = value.store(context, builder, id)?;
 
@@ -201,7 +202,43 @@ impl CodegenVisitorTrait for CodegenVisitor {
                     warn!("No last sym for the assignment statement");
                 }
             }
-            _ => {}
+            Statement::Conditional(condition, body) => {
+                let func_llvm = codegen.function_table
+                    .get(func.id.get_name())
+                    .with_context(|| "Cannot get function".to_string())?
+                    .1;
+
+                unsafe {
+                    let then_block =
+                        LLVMAppendBasicBlockInContext(context, func_llvm, c_str!("then"));
+                    let else_block =
+                        LLVMAppendBasicBlockInContext(context, func_llvm, c_str!("else"));
+
+                    self.visit_expr(func, stmt, condition, codegen)
+                        .with_context(|| "Evaluating expression of conditional failed".to_string())?;
+                    let if_expr = codegen.expr_tables
+                        .get_mut(&func.id)
+                        .with_context(|| "Cannot find function".to_string())?
+                        .get_last()
+                        .with_context(|| "Cannot compute value of conditional".to_string())?
+                        .value;
+
+                    LLVMBuildCondBr(builder, if_expr, then_block, else_block);
+                    LLVMPositionBuilderAtEnd(builder, then_block);
+
+                    for statement in body {
+                        self.visit_statement(func, statement, codegen)
+                            .with_context(|| "Evaluating statement of conditional failed".to_string())?;
+                    }
+
+                    LLVMPositionBuilderAtEnd(builder, else_block);
+                }
+
+
+            }
+            _ => {
+                unimplemented!()
+            }
         }
 
         codegen.clear_expr_table(&func.id)?;
@@ -224,13 +261,13 @@ impl CodegenVisitorTrait for CodegenVisitor {
                 self.visit_term(func, statement, expr, term, codegen)?;
             }
             Expr::Num(num) => unsafe {
-                let i64_ty = LLVMIntTypeInContext(codegen.context, 64);
-                let value = LLVMConstInt(i64_ty, *num as u64, 0);
+                let i32_ty = self.get_i32_ty(codegen);
+                let value = LLVMConstInt(i32_ty, *num as u64, 0);
                 codegen
                     .expr_tables
                     .get_mut(&func.id)
                     .with_context(|| "Cannot get expr table")?
-                    .push(value, BasicValueType::Int(i64_ty))?;
+                    .push(value, BasicValueType::Int(i32_ty))?;
             },
             Expr::Dual(opcode, term1, term2) => {
                 self.visit_term(func, statement, expr, term1, codegen)?;
@@ -250,20 +287,29 @@ impl CodegenVisitorTrait for CodegenVisitor {
                     .with_context(|| "Cannot get the first term of the operation")?;
 
                 unsafe {
-                    match opcode {
+                    let computed_value = match opcode {
                         Opcode::Add => {
                             let name = c_str!(&self.generate_number().to_string());
                             let value = LLVMBuildAdd(builder, t1.value, t2.value, name);
+                            let i32_ty = self.get_i32_ty(codegen);
 
-                            let i64_ty = LLVMIntTypeInContext(codegen.context, 64);
-                            codegen
-                                .expr_tables
-                                .get_mut(&func.id)
-                                .with_context(|| "Cannot get expr table")?
-                                .push(value, BasicValueType::Int(i64_ty))?;
+                            (value, BasicValueType::Int(i32_ty))
+                        }
+                        Opcode::Cmp => {
+                            let name = c_str!(&self.generate_number().to_string());
+                            let value = LLVMBuildICmp(builder, LLVMIntPredicate::LLVMIntEQ, t1.value, t2.value, name);
+                            let i32_ty = self.get_i32_ty(codegen);
+
+                            (value, BasicValueType::Int(i32_ty))
                         }
                         _ => unimplemented!(),
-                    }
+                    };
+
+                    codegen
+                        .expr_tables
+                        .get_mut(&func.id)
+                        .with_context(|| "Cannot get expr table")?
+                        .push(computed_value.0, computed_value.1)?;
                 }
             }
             Expr::Call(ident, exprs) => {
@@ -344,13 +390,13 @@ impl CodegenVisitorTrait for CodegenVisitor {
 
         match term {
             Term::Num(num) => unsafe {
-                let i64_ty = LLVMIntTypeInContext(codegen.context, 64);
-                let value = LLVMConstInt(i64_ty, *num as u64, 0);
+                let i32_ty = self.get_i32_ty(codegen);
+                let value = LLVMConstInt(i32_ty, *num as u64, 0);
                 codegen
                     .expr_tables
                     .get_mut(&func.id)
                     .with_context(|| "Cannot get expr table")?
-                    .push(value, BasicValueType::Int(i64_ty))?;
+                    .push(value, BasicValueType::Int(i32_ty))?;
             },
             Term::Id(ident) => {
                 let sym = codegen

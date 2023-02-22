@@ -87,7 +87,8 @@ pub Statement: Box<Statement> = {
     <id:Id> "." <field:Id> "=" <e:Expr> => 
         Box::new(Statement::ReAssign(id.update_field_access(Some(field)), e)),
 	"let" <id:Id> "=" "new" <st:Id> =>
-        Box::new(Statement::Allocate(id.update_ty(DataType::Struct(Box::new(st.clone()))), st))
+        Box::new(Statement::Allocate(id.update_ty(DataType::Struct(Box::new(st.clone()))), st)),
+    "if" <e:Expr> "{" <stats:Statements> "}" => Box::new(Statement::Conditional(e, stats))
 };
 
 pub Expr: Box<Expr> = {

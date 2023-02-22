@@ -192,6 +192,7 @@ pub enum Statement {
     Assign(IdTy, Box<Expr>),
     ReAssign(IdTy, Box<Expr>),
     Allocate(IdTy, IdTy),
+    Conditional(Box<Expr>, Vec<Box<Statement>>),
 }
 
 impl Statement {
@@ -202,6 +203,7 @@ impl Statement {
             Statement::ReAssign(_, expr) => Some(expr),
             Statement::Allocate(_, _) => None,
             Statement::RetVoid => None,
+            Statement::Conditional(expr, _) => Some(expr),
         };
     }
 }
