@@ -1,0 +1,24 @@
+---
+source: src/tests/ir.rs
+expression: ir
+---
+; ModuleID = 'main'
+source_filename = "main"
+target triple = "x86_64-unknown-linux-gnu"
+
+define i32 @main() {
+main:
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %main
+  ret i32 1
+  br label %resume
+
+else:                                             ; preds = %main
+  ret i32 0
+  br label %resume
+
+resume:                                           ; preds = %else, %then
+  ret i32 2
+}
+

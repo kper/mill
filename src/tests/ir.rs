@@ -70,6 +70,11 @@ fn test_conditional() {
 }
 
 #[test]
+fn test_conditional_with_else() {
+    compile!("fn main() -> int { if 2 == 2 { return 1; } else { return 0; } return 2; }");
+}
+
+#[test]
 fn test_call_when_names_in_order() {
     compile!(
         "fn f(b: int) -> int { return b; } fn main() -> int { let a : int = 1; return f(a); }"

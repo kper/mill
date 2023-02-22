@@ -8,7 +8,7 @@ use log::{debug, warn};
 
 use llvm_sys::core::*;
 use llvm_sys::LLVMIntPredicate;
-use llvm_sys::prelude::LLVMTypeRef;
+use llvm_sys::prelude::{LLVMTypeRef, LLVMValueRef};
 use crate::c_str;
 
 use crate::symbol_table::*;
@@ -70,6 +70,18 @@ impl CodegenVisitor {
         };
 
         LLVMFunctionType(ret_ty, args_ty.as_mut_ptr(), args_ty.len() as u32, 0)
+    }
+
+    fn compute_conditional_llvm_value(&mut self, func: &&Func, stmt: &Statement, codegen: &mut Codegen, condition: &Box<Expr>) -> Result<LLVMValueRef> {
+        self.visit_expr(func, stmt, condition, codegen)
+            .with_context(|| "Evaluating expression of conditional failed".to_string())?;
+
+        Ok(codegen.expr_tables
+            .get_mut(&func.id)
+            .with_context(|| "Cannot find function".to_string())?
+            .get_last()
+            .with_context(|| "Cannot compute value of conditional".to_string())?
+            .value)
     }
 }
 
@@ -214,14 +226,7 @@ impl CodegenVisitorTrait for CodegenVisitor {
                     let else_block =
                         LLVMAppendBasicBlockInContext(context, func_llvm, c_str!("else"));
 
-                    self.visit_expr(func, stmt, condition, codegen)
-                        .with_context(|| "Evaluating expression of conditional failed".to_string())?;
-                    let if_expr = codegen.expr_tables
-                        .get_mut(&func.id)
-                        .with_context(|| "Cannot find function".to_string())?
-                        .get_last()
-                        .with_context(|| "Cannot compute value of conditional".to_string())?
-                        .value;
+                    let if_expr = self.compute_conditional_llvm_value(&func, stmt, codegen, condition)?;
 
                     LLVMBuildCondBr(builder, if_expr, then_block, else_block);
                     LLVMPositionBuilderAtEnd(builder, then_block);
@@ -233,8 +238,41 @@ impl CodegenVisitorTrait for CodegenVisitor {
 
                     LLVMPositionBuilderAtEnd(builder, else_block);
                 }
+            }
+            Statement::ConditionalElse(condition, then_stats, else_stats) => {
+                let func_llvm = codegen.function_table
+                    .get(func.id.get_name())
+                    .with_context(|| "Cannot get function".to_string())?
+                    .1;
 
+                unsafe {
+                    let then_block =
+                        LLVMAppendBasicBlockInContext(context, func_llvm, c_str!("then"));
+                    let else_block =
+                        LLVMAppendBasicBlockInContext(context, func_llvm, c_str!("else"));
+                    let resume_block =
+                        LLVMAppendBasicBlockInContext(context, func_llvm, c_str!("resume"));
 
+                    let if_expr = self.compute_conditional_llvm_value(&func, stmt, codegen, condition)?;
+
+                    LLVMBuildCondBr(builder, if_expr, then_block, else_block);
+                    LLVMPositionBuilderAtEnd(builder, then_block);
+
+                    let mut build_statements = |body: &[Box<Statement>]| -> Result<()> {
+                        for statement in body {
+                            self.visit_statement(func, statement, codegen)
+                                .with_context(|| "Evaluating statement of conditional failed".to_string())?;
+                        }
+                        LLVMBuildBr(builder, resume_block);
+
+                        Ok(())
+                    };
+
+                    build_statements(then_stats)?;
+                    LLVMPositionBuilderAtEnd(builder, else_block);
+                    build_statements(else_stats)?;
+                    LLVMPositionBuilderAtEnd(builder, resume_block);
+                }
             }
             _ => {
                 unimplemented!()
