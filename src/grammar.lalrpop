@@ -52,10 +52,10 @@ pub Decl: Decl = {
 };
 
 pub Funcdef : Func = {
-	"fn" <id:Id> "(" <pars:Pars> ")" "{" <statements:Statements> "}" =>? Func::new(id, pars, statements, None).map_err(|w| ParseError::User {
+	"fn" <id:Id> "(" <pars:Pars> ")" "{" <statements:Statement*> "}" =>? Func::new(id, pars, statements, None).map_err(|w| ParseError::User {
         error: w
     }),
-    "fn" <id:Id> "(" <pars:Pars> ")" "->" <ret:DataType>  "{" <statements:Statements> "}" =>? Func::new(id, pars, statements, Some(ret)).map_err(|w| ParseError::User {
+    "fn" <id:Id> "(" <pars:Pars> ")" "->" <ret:DataType>  "{" <statements:Statement*> "}" =>? Func::new(id, pars, statements, Some(ret)).map_err(|w| ParseError::User {
         error: w
     })
 };
@@ -75,20 +75,18 @@ DataType: DataType = {
     <id:Id> => DataType::Struct(Box::new(id))
 }
 
-pub Statements = SemiComma<Statement>;
-
 pub Statement: Box<Statement> = {
-	"return" => Box::new(Statement::RetVoid),
-	"return" <e:Expr> => Box::new(Statement::Ret(e)),
-    "let" <id:Id> ":" <dat:DataType> "=" <e:Expr> => {
+	"return" ";" => Box::new(Statement::RetVoid),
+	"return" <e:Expr> ";" => Box::new(Statement::Ret(e)),
+    "let" <id:Id> ":" <dat:DataType> "=" <e:Expr> ";" => {
         Box::new(Statement::Assign(id.update_ty(dat), e))
     },
-    <id:Id> "=" <e:Expr> => Box::new(Statement::ReAssign(id, e)),
-    <id:Id> "." <field:Id> "=" <e:Expr> => 
+    <id:Id> "=" <e:Expr> ";" => Box::new(Statement::ReAssign(id, e)),
+    <id:Id> "." <field:Id> "=" <e:Expr> ";" =>
         Box::new(Statement::ReAssign(id.update_field_access(Some(field)), e)),
-	"let" <id:Id> "=" "new" <st:Id> =>
+	"let" <id:Id> "=" "new" <st:Id> ";" =>
         Box::new(Statement::Allocate(id.update_ty(DataType::Struct(Box::new(st.clone()))), st)),
-    "if" <e:Expr> "{" <stats:Statements> "}" => Box::new(Statement::Conditional(e, stats))
+    "if" <e:Expr> "{" <stats:Statement*> "}" => Box::new(Statement::Conditional(e, stats))
 };
 
 pub Expr: Box<Expr> = {

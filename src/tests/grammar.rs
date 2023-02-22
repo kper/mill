@@ -41,7 +41,7 @@ fn parse_expr() {
 #[test]
 fn parse_statement() {
     assert!(grammar::StatementParser::new()
-        .parse("let x : int = x")
+        .parse("let x : int = x;")
         .is_ok());
 }
 

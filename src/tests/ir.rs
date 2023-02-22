@@ -56,7 +56,7 @@ fn test_assignment() {
 
 #[test]
 fn test_reassignment() {
-    compile!("fn main() { let a : int = 1; a  = 2; }");
+    compile!("fn main() { let a : int = 1; a = 2; }");
 }
 
 #[test]
@@ -66,7 +66,7 @@ fn test_addition() {
 
 #[test]
 fn test_conditional() {
-    compile!("fn main() -> int { if 2 == 2 { return 1; }; return 0; }");
+    compile!("fn main() -> int { if 2 == 2 { return 1; } return 0; }");
 }
 
 #[test]
