@@ -82,7 +82,6 @@ fn main() {
 
 fn run(mut ast: ast::Program) -> Result<()> {
     let mut runner = Runner;
-    let mut passes = default_passes();
 
     unsafe {
         let context = LLVMContextCreate();
@@ -114,11 +113,4 @@ fn run(mut ast: ast::Program) -> Result<()> {
     }
 
     Ok(())
-}
-
-pub(crate) fn default_passes() -> Vec<Pass> {
-    vec![Pass::new(
-        Box::new(CheckIfFunctionCallExistsVisitor::default()),
-        Box::new(NormalTraversal),
-    )]
 }

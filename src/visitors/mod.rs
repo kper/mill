@@ -5,8 +5,6 @@ mod check_if_function_call_exists;
 mod codegen;
 mod check_if_function_has_return_ty;
 
-pub use crate::visitors::check_if_function_call_exists::*;
-pub use crate::visitors::check_if_function_has_return_ty::*;
 pub use crate::visitors::codegen::*;
 
 use crate::codegen::Codegen;
