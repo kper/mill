@@ -1,18 +1,15 @@
 use crate::ast::*;
-use crate::pass::Pass;
-use anyhow::Result;
-
-use crate::traversal::CodegenTraversal;
-use crate::visitors::CodegenVisitorTrait;
-
-use crate::codegen::Codegen;
+use anyhow::{Result, Context};
 
 pub struct Runner;
 
 impl Runner {
-    /**
-     * Run the visitors
-     */
+    pub fn lowering(&mut self, program: &Program) -> Result<crate::lir::tree::LoweredProgram> {
+        let mut pass = crate::lir::lowering::LoweringPass;
+        pass.lower(program).context("Lowering failed")
+    }
+
+    /*
     pub fn run_visitors(&mut self, passes: &mut [Pass], program: &mut Program) -> Result<()> {
         for pass in passes.iter_mut() {
             pass.run(program)?;
@@ -32,4 +29,5 @@ impl Runner {
 
         Ok(())
     }
+    */
 }

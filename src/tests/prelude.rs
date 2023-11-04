@@ -16,6 +16,6 @@ macro_rules! run_visitor {
         let mut program = crate::grammar::ProgramParser::new().parse(&input).unwrap();
 
         let mut runner = Runner;
-        runner.run_visitors($passes, &mut program)
+        //runner.run_visitors($passes, &mut program)
     }};
 }

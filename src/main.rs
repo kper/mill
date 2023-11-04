@@ -15,6 +15,7 @@ mod symbol_table;
 mod traversal;
 mod utils;
 mod visitors;
+mod lir;
 
 use pass::Pass;
 use runner::Runner;
@@ -88,22 +89,13 @@ fn run(mut ast: ast::Program) -> Result<()> {
         let module = LLVMModuleCreateWithName(c_str!("main"));
         let builder = LLVMCreateBuilderInContext(context);
 
-        let mut codegen = Codegen::new(context, module, builder);
+        //let mut codegen = Codegen::new(context, module, builder);
 
+        /*
         runner
             .run_visitors(&mut passes, &mut ast)
             .context("Running visitors failed")?;
-
-        info!("=> Finished visitors");
-
-        let travel = CodegenTraversal;
-
-        runner
-            .run_codegen(&mut CodegenVisitor::new(), &mut codegen, travel, &mut ast)
-            .context("Running codegen failed")?;
-
-        info!("=> Finished codegen");
-
+        */
         LLVMVerifyModule(
             module,
             LLVMVerifierFailureAction::LLVMAbortProcessAction,

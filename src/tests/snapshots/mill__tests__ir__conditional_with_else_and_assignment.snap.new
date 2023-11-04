@@ -1,0 +1,28 @@
+---
+source: src/tests/ir.rs
+expression: ir
+
+---
+; ModuleID = 'main'
+source_filename = "main"
+target triple = "x86_64-unknown-linux-gnu"
+
+define i32 @main() {
+main:
+  %a = alloca i32, align 4
+  store i32 1, i32* %a, align 4
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %main
+  %a1 = alloca i32, align 4
+  store i32 3, i32* %a1, align 4
+  br label %resume
+
+else:                                             ; preds = %main
+  %a2 = alloca i32, align 4
+  store i32 2, i32* %a2, align 4
+  br label %resume
+
+resume:                                           ; preds = %else, %then
+}
+
