@@ -2,7 +2,6 @@
 extern crate lalrpop_util;
 extern crate core;
 
-use std::env;
 use std::fs::File;
 use std::io::Read;
 
@@ -17,13 +16,8 @@ mod utils;
 mod visitors;
 mod lir;
 
-use pass::Pass;
 use runner::Runner;
-use visitors::*;
-
-use crate::codegen::Codegen;
-use crate::traversal::CodegenTraversal;
-use crate::traversal::NormalTraversal;
+use clap::Parser;
 
 use llvm_sys::bit_writer::LLVMWriteBitcodeToFile;
 use llvm_sys::core::*;
@@ -32,6 +26,8 @@ use log::info;
 
 use anyhow::{Context, Result};
 use llvm_sys::analysis::{LLVMVerifierFailureAction, LLVMVerifyModule};
+
+use crate::lir::lowering::LoweringPass;
 
 #[macro_export]
 macro_rules! c_str {
@@ -45,16 +41,24 @@ mod tests;
 
 lalrpop_mod!(pub grammar);
 
+/// A simple compiler
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    #[arg(short, long)]
+    print_lowering: bool,
+    #[arg(short, long)]
+    files: Vec<String>,
+}
+
 fn main() {
     env_logger::init();
+    let args = Args::parse();
 
-    let arguments: Vec<String> = env::args().collect();
+    info!("=> Running compiler with {:?}", args);
 
     let mut content = String::new();
-
-    info!("=> Running compiler with {:?}", arguments);
-
-    for file in arguments.into_iter().skip(1) {
+    for file in args.files.into_iter().skip(1) {
         let mut file_content = String::new();
         let mut fs = File::open(file).expect("Cannot find file");
 
@@ -66,6 +70,17 @@ fn main() {
     let ast = grammar::ProgramParser::new().parse(&content).unwrap();
 
     info!("=> Program parsed");
+
+    info!("=> Staring lowering");
+    let mut lowering_pass = LoweringPass;
+    let lowered = lowering_pass.lower(&ast).unwrap();
+
+    if args.print_lowering {
+        use graphviz_rust::printer::{DotPrinter, PrinterContext};
+
+        let graph = lowered.print();
+        println!("{}", graph.print(&mut PrinterContext::default()));
+    }
 
     info!("=> Starting codegen");
 

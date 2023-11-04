@@ -16,6 +16,7 @@ anyhow = "1.0"
 either = "1.6.1"
 libc = "0.2.139"
 graphviz-rust = "0.6.6"
+clap = { version="4.4.7", features=["derive"] }
 
 [build-dependencies]
 lalrpop = "0.20.0"
