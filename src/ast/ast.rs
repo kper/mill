@@ -3,8 +3,6 @@ use anyhow::{bail, Result};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-pub type IdTy = Identifier;
-
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Identifier {
     id: String,
@@ -134,9 +132,9 @@ impl Program {
 #[derive(Debug, Clone)]
 pub struct Func {
     /// Name of the function
-    pub id: IdTy,
+    pub id: Identifier,
     /// Parameters of the function
-    pub pars: Vec<IdTy>,
+    pub pars: Vec<Identifier>,
     /// The statements of the function
     pub statements: Vec<Box<Statement>>,
     /// Return type of the function. This is None when void.
@@ -145,8 +143,8 @@ pub struct Func {
 
 impl Func {
     pub fn new(
-        id: IdTy,
-        pars: Vec<IdTy>,
+        id: Identifier,
+        pars: Vec<Identifier>,
         statements: Vec<Box<Statement>>,
         ret_ty: Option<DataType>,
     ) -> Result<Self> {
@@ -154,13 +152,12 @@ impl Func {
 
         for stmt in statements.iter() {
             match &**stmt {
-                Statement::Assign(id, _) => symbol_table.insert(id.get_name())?,
-                Statement::Allocate(id, _) => symbol_table.insert(id.get_name())?,
-                Statement::ReAssign(id, _) => {
+                Statement::Assign(id, _) => {
                     if !symbol_table.lookup_symbol(&id.get_name()) {
                         bail!("Symbol {} is not defined", id);
                     }
                 }
+                Statement::Definition(id, _) => symbol_table.insert(id.get_name())?,
                 _ => {}
             }
         }
@@ -189,11 +186,9 @@ impl Func {
 pub enum Statement {
     RetVoid,
     Ret(Box<Expr>),
-    Assign(IdTy, Box<Expr>),
-    ReAssign(IdTy, Box<Expr>),
-    Allocate(IdTy, IdTy),
+    Assign(Identifier, Box<Expr>),
+    Definition(Identifier, Box<Expr>),
     Conditional(Box<Expr>, Vec<Box<Statement>>),
-    ConditionalElse(Box<Expr>, Vec<Box<Statement>>, Vec<Box<Statement>>),
 }
 
 impl Statement {
@@ -201,26 +196,22 @@ impl Statement {
         return match self {
             Statement::Ret(expr) => Some(expr),
             Statement::Assign(_, expr) => Some(expr),
-            Statement::ReAssign(_, expr) => Some(expr),
-            Statement::Allocate(_, _) => None,
+            Statement::Definition(_, _) => None,
             Statement::RetVoid => None,
             Statement::Conditional(expr, _) => Some(expr),
-            Statement::ConditionalElse(expr, _, _) => Some(expr),
         };
     }
 }
 
 #[derive(Debug, Clone)]
 pub enum Expr {
-    Num(i32),
-    Id(Identifier),
     Struct(Identifier),
-    Dual(Opcode, Box<Term>, Box<Term>),
-    Single(Box<Term>),
-    Call(IdTy, Vec<Box<Expr>>),
+    Binary(Opcode, Box<Term>, Box<Term>),
+    Term(Box<Term>),
+    Call(Identifier, Vec<Box<Expr>>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Opcode {
     Mul,
     Div,
@@ -237,6 +228,6 @@ pub enum Opcode {
 #[derive(Debug, Clone)]
 pub enum Term {
     Num(i64),
-    Id(IdTy),
-    Object(IdTy, IdTy),
+    Id(Identifier),
+    Object(Identifier, Identifier),
 }

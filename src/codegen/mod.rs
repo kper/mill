@@ -4,7 +4,7 @@ use llvm_sys::core::*;
 use anyhow::Context;
 use std::collections::HashMap;
 
-use crate::ast::IdTy;
+use crate::ast::Identifier;
 use crate::c_str;
 use llvm_sys::prelude::*;
 
@@ -12,11 +12,11 @@ pub struct Codegen {
     pub context: LLVMContextRef,
     pub module: LLVMModuleRef,
     pub builder: LLVMBuilderRef,
-    pub symbol_tables: HashMap<IdTy, LLVMSymbolTable>,
+    pub symbol_tables: HashMap<Identifier, LLVMSymbolTable>,
     pub function_table: LLVMFunctionTable,
     pub block_table: LLVMBlockTable,
     pub struct_table: LLVMStructTable,
-    pub expr_tables: HashMap<IdTy, LLVMExprTable>,
+    pub expr_tables: HashMap<Identifier, LLVMExprTable>,
 }
 
 impl Codegen {
@@ -37,7 +37,7 @@ impl Codegen {
         }
     }
 
-    pub fn clear_expr_table(&mut self, function: &IdTy) -> anyhow::Result<()> {
+    pub fn clear_expr_table(&mut self, function: &Identifier) -> anyhow::Result<()> {
         self.expr_tables
             .get_mut(function)
             .with_context(|| "Cannot find expr table".to_string())?

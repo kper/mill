@@ -5,7 +5,7 @@ pub struct Runner;
 
 impl Runner {
     pub fn lowering(&mut self, program: &Program) -> Result<crate::lir::tree::LoweredProgram> {
-        let mut pass = crate::lir::lowering::LoweringPass;
+        let mut pass = crate::lir::lowering::LoweringPass::default();
         pass.lower(program).context("Lowering failed")
     }
 

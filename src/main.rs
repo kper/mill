@@ -7,13 +7,9 @@ use std::io::Read;
 
 mod ast;
 mod codegen;
-mod nodes;
-mod pass;
 mod runner;
 mod symbol_table;
-mod traversal;
 mod utils;
-mod visitors;
 mod lir;
 
 use runner::Runner;
@@ -58,7 +54,7 @@ fn main() {
     info!("=> Running compiler with {:?}", args);
 
     let mut content = String::new();
-    for file in args.files.into_iter().skip(1) {
+    for file in args.files.into_iter() {
         let mut file_content = String::new();
         let mut fs = File::open(file).expect("Cannot find file");
 
@@ -72,7 +68,7 @@ fn main() {
     info!("=> Program parsed");
 
     info!("=> Staring lowering");
-    let mut lowering_pass = LoweringPass;
+    let mut lowering_pass = LoweringPass::default();
     let lowered = lowering_pass.lower(&ast).unwrap();
 
     if args.print_lowering {
