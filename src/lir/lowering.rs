@@ -101,7 +101,7 @@ impl LoweringPass {
                 let then_block = BasicBlock::empty(self.basic_block_counter.fetch_and_increment());
 
                 self.map_stmts(statements, &mut if_block)?;
-                let stmt = LoweredStatement::Conditional_Jump(
+                let stmt = LoweredStatement::ConditionalJump(
                     self.map_expr(condition)?,
                     Box::new(if_block),
                 );

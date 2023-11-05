@@ -61,7 +61,7 @@ impl LoweredProgram {
                         format!("{} = {:?}", ident.get_ident().get_name(), expr).as_str(),
                     );
                 }
-                LoweredStatement::Conditional_Jump(condition, block) => {
+                LoweredStatement::ConditionalJump(condition, block) => {
                     content.push_str(
                         format!("if {:?} -> jump {:?}", condition, block.get_id()).as_str(),
                     );

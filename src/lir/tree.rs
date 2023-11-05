@@ -132,7 +132,7 @@ pub enum LoweredStatement {
     Definition(Variable, LoweredExpression),
     Assignment(Variable, LoweredExpression),
     Phi(Variable, Vec<Variable>),
-    Unconditional_Jump(Box<BasicBlock>),
-    Conditional_Jump(LoweredExpression, Box<BasicBlock>),
+    UnconditionalJump(Box<BasicBlock>),
+    ConditionalJump(LoweredExpression, Box<BasicBlock>),
     RetVoid,
 }
