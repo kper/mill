@@ -229,5 +229,4 @@ pub enum Opcode {
 pub enum Term {
     Num(i64),
     Id(Identifier),
-    Object(Identifier, Identifier),
 }

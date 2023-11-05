@@ -125,14 +125,21 @@ impl LoweringPass {
                 self.map_term(a).context("Cannot map the term")?,
                 self.map_term(b).context("Cannot map the term")?,
             ),
-            _ => unimplemented!(),
+            Expr::Call(ref function_name, ref parameters) => LoweredExpression::Call(
+                function_name.clone(),
+                parameters
+                    .iter()
+                    .map(|x| Box::new(self.map_expr(x).unwrap()))
+                    .collect::<Vec<_>>(),
+            ),
+            Expr::Struct(_) => unimplemented!(),
         })
     }
 
     fn map_term(&mut self, term: &Box<Term>) -> Result<LoweredTerm> {
         Ok(match *term.as_ref() {
             Term::Num(num) => LoweredTerm::Constant(num),
-            _ => unimplemented!(),
+            Term::Id(ref id) => LoweredTerm::Id(Variable::new(id.clone(), false)),
         })
     }
 

@@ -118,11 +118,13 @@ impl Variable {
 pub enum LoweredExpression {
     Term(LoweredTerm),
     Binary(Opcode, LoweredTerm, LoweredTerm),
+    Call(Identifier, Vec<Box<LoweredExpression>>),
 }
 
 #[derive(Debug, PartialEq)]
 pub enum LoweredTerm {
     Constant(i64),
+    Id(Variable),
 }
 
 #[derive(Debug, PartialEq)]
