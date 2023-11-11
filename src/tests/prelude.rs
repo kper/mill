@@ -1,8 +1,5 @@
 pub use crate::codegen::Codegen;
-pub use crate::pass::Pass;
 pub use crate::runner::Runner;
-pub use crate::traversal::*;
-pub use crate::visitors::*;
 
 pub use crate::run_visitor;
 
